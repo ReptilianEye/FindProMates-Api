@@ -11,6 +11,14 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
+func MapTo[E, V comparable](arr []E, mapper func(E) V) []V {
+	mapped := make([]V, len(arr))
+	for i, v := range arr {
+		mapped[i] = mapper(v)
+	}
+	return mapped
+}
+
 func readFromDB() {
 	client, err := mongo.Connect(context.TODO(), options.Client().ApplyURI(os.Getenv("MONGODB_URI")))
 	if err != nil {
