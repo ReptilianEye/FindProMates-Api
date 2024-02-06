@@ -1,0 +1,39 @@
+{
+  "users": [
+    {
+      "firstName": "John",
+      "lastName": "Doe",
+      "email": "john@example.com",
+      "password": "password123",
+      "skills": ["Python", "Java", "JavaScript"]
+    },
+    {
+      "firstName": "Alice",
+      "lastName": "Smith",
+      "email": "alice@example.com",
+      "password": "alice_password",
+      "skills": ["Go", "React"]
+    },
+    {
+      "firstName": "Bob",
+      "lastName": "Johnson",
+      "email": "bob@example.com",
+      "password": "bob_password",
+      "skills": ["JavaScript", "Angular"]
+    }
+  ],
+  "projects": [
+    {
+      "owner": "60e1fd1b1e777d06b2a5fd66",
+      "name": "Project A",
+      "description": "This is project A description.",
+      "collaborators": []
+    },
+    {
+      "owner": "60e1fd1b1e777d06b2a5fd69",
+      "name": "Project B",
+      "description": "This is project B description.",
+      "collaborators": []
+    }
+  ]
+}
