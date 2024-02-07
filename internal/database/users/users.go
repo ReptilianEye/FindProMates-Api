@@ -2,9 +2,12 @@ package users
 
 import (
 	"context"
+	"log"
 
 	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
+	"golang.org/x/crypto/bcrypt"
 )
 
 type UserModel struct {
@@ -14,16 +17,16 @@ type UserModel struct {
 // keys for params map
 const (
 	Id        string = "_id"
-	FirstName string = "first_name"
-	LastName  string = "last_name"
+	FirstName string = "firstName"
+	LastName  string = "lastName"
 	Username  string = "username"
 	Email     string = "email"
-	Password  string = "password"
 )
+
+var ctx = context.TODO()
 
 // All returns all users from the MongoDB collection.
 func (m *UserModel) All() ([]User, error) {
-	ctx := context.TODO()
 	users := []User{}
 
 	cursor, err := m.C.Find(ctx, bson.M{})
@@ -36,20 +39,30 @@ func (m *UserModel) All() ([]User, error) {
 	}
 	return users, nil
 }
-func (m *UserModel) FindById(id string) (*User, error) {
-	users, err := m.FindByParameters(map[string]string{Id: id})
+func (m *UserModel) FindById(id primitive.ObjectID) (*User, error) {
+	var user User
+	err := m.C.FindOne((ctx), bson.M{Id: id}).Decode(&user)
 	if err != nil {
 		return nil, err
 	}
-	return &users[0], nil
+	return &user, nil
 }
-
+func (m *UserModel) FindByUsername(username string) (primitive.ObjectID, error) {
+	var user User
+	err := m.C.FindOne(ctx, bson.M{Username: username}).Decode(&user)
+	if err != nil {
+		return primitive.NilObjectID, err
+	}
+	return user.ID, nil
+}
 func (m *UserModel) FindByParameters(params map[string]string) ([]User, error) {
 	query := bson.M{}
 	for key, value := range params {
+		if key == Id {
+			panic("Use FindById to find by id")
+		}
 		query[key] = value
 	}
-	ctx := context.TODO()
 	cursor, err := m.C.Find(ctx, query)
 	if err != nil {
 		return nil, err
@@ -60,4 +73,27 @@ func (m *UserModel) FindByParameters(params map[string]string) ([]User, error) {
 		return nil, err
 	}
 	return users, nil
+}
+
+func (m *UserModel) Create(user *User) (*User, error) {
+	_, err := m.C.InsertOne(ctx, user)
+	if err != nil {
+		return nil, err
+	}
+	return user, nil
+}
+
+func (m *UserModel) Authenticate(username, password string) bool {
+	var user User
+	err := m.C.FindOne(ctx, bson.M{Username: username}).Decode(&user)
+	if err != nil {
+		log.Println(err)
+		return false
+	}
+	return checkPasswordHash(password, user.Password)
+
+}
+func checkPasswordHash(password, hash string) bool {
+	err := bcrypt.CompareHashAndPassword([]byte(hash), []byte(password))
+	return err == nil
 }

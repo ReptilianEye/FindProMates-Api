@@ -11,8 +11,8 @@ const UserCollection string = "users"
 
 type User struct {
 	ID        primitive.ObjectID `bson:"_id,omitempty"`
-	FirstName string             `bson:"first_name,omitempty" `
-	LastName  string             `bson:"last_name,omitempty"`
+	FirstName string             `bson:"firstName,omitempty" `
+	LastName  string             `bson:"lastName,omitempty"`
 	Username  string             `bson:"username,omitempty"`
 	Email     string             `bson:"email,omitempty"`
 	Password  string             `bson:"password,omitempty"`

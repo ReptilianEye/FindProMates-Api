@@ -19,18 +19,31 @@ type Project {
   collaborators: [User!]!
 }
 
+type UserProjects {
+  owner: User!
+  owned: [Project!]!
+  collaborated: [Project!]!
+}
+
 input NewUser {
   firstName: String!
   lastName: String!
   username: String
   password: String!
   email: String!
+  skills: [String!]!
 }
 
 input NewProject {
   name: String!
   description: String
-  contributors: [ID!]!
+  collaborators: [ID!]!
+}
+
+input UpdateProject {
+  name: String
+  description: String
+  collaborators: [ID!]
 }
 
 input RefreshTokenInput {
@@ -45,6 +58,7 @@ input Login {
 type Query {
   users: [User!]!
   projects: [Project!]!
+  projectsByUser(id: ID!): UserProjects!
   project(id: ID!): Project
 }
 

@@ -64,9 +64,10 @@ type ComplexityRoot struct {
 	}
 
 	Query struct {
-		Project  func(childComplexity int, id string) int
-		Projects func(childComplexity int) int
-		Users    func(childComplexity int) int
+		Project        func(childComplexity int, id string) int
+		Projects       func(childComplexity int) int
+		ProjectsByUser func(childComplexity int, id string) int
+		Users          func(childComplexity int) int
 	}
 
 	User struct {
@@ -74,9 +75,14 @@ type ComplexityRoot struct {
 		FirstName func(childComplexity int) int
 		ID        func(childComplexity int) int
 		LastName  func(childComplexity int) int
-		Projects  func(childComplexity int) int
 		Skills    func(childComplexity int) int
 		Username  func(childComplexity int) int
+	}
+
+	UserProjects struct {
+		Collaborated func(childComplexity int) int
+		Owned        func(childComplexity int) int
+		Owner        func(childComplexity int) int
 	}
 }
 
@@ -90,6 +96,7 @@ type MutationResolver interface {
 type QueryResolver interface {
 	Users(ctx context.Context) ([]*model.User, error)
 	Projects(ctx context.Context) ([]*model.Project, error)
+	ProjectsByUser(ctx context.Context, id string) (*model.UserProjects, error)
 	Project(ctx context.Context, id string) (*model.Project, error)
 }
 
@@ -226,6 +233,18 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.Query.Projects(childComplexity), true
 
+	case "Query.projectsByUser":
+		if e.complexity.Query.ProjectsByUser == nil {
+			break
+		}
+
+		args, err := ec.field_Query_projectsByUser_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Query.ProjectsByUser(childComplexity, args["id"].(string)), true
+
 	case "Query.users":
 		if e.complexity.Query.Users == nil {
 			break
@@ -261,13 +280,6 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.User.LastName(childComplexity), true
 
-	case "User.projects":
-		if e.complexity.User.Projects == nil {
-			break
-		}
-
-		return e.complexity.User.Projects(childComplexity), true
-
 	case "User.skills":
 		if e.complexity.User.Skills == nil {
 			break
@@ -282,6 +294,27 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.User.Username(childComplexity), true
 
+	case "UserProjects.collaborated":
+		if e.complexity.UserProjects.Collaborated == nil {
+			break
+		}
+
+		return e.complexity.UserProjects.Collaborated(childComplexity), true
+
+	case "UserProjects.owned":
+		if e.complexity.UserProjects.Owned == nil {
+			break
+		}
+
+		return e.complexity.UserProjects.Owned(childComplexity), true
+
+	case "UserProjects.owner":
+		if e.complexity.UserProjects.Owner == nil {
+			break
+		}
+
+		return e.complexity.UserProjects.Owner(childComplexity), true
+
 	}
 	return 0, false
 }
@@ -294,6 +327,7 @@ func (e *executableSchema) Exec(ctx context.Context) graphql.ResponseHandler {
 		ec.unmarshalInputNewProject,
 		ec.unmarshalInputNewUser,
 		ec.unmarshalInputRefreshTokenInput,
+		ec.unmarshalInputUpdateProject,
 	)
 	first := true
 
@@ -524,6 +558,21 @@ func (ec *executionContext) field_Query_project_args(ctx context.Context, rawArg
 	return args, nil
 }
 
+func (ec *executionContext) field_Query_projectsByUser_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 string
+	if tmp, ok := rawArgs["id"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("id"))
+		arg0, err = ec.unmarshalNID2string(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["id"] = arg0
+	return args, nil
+}
+
 func (ec *executionContext) field___Type_enumValues_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
 	var err error
 	args := map[string]interface{}{}
@@ -613,8 +662,6 @@ func (ec *executionContext) fieldContext_Mutation_createUser(ctx context.Context
 				return ec.fieldContext_User_email(ctx, field)
 			case "skills":
 				return ec.fieldContext_User_skills(ctx, field)
-			case "projects":
-				return ec.fieldContext_User_projects(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type User", field.Name)
 		},
@@ -1060,8 +1107,6 @@ func (ec *executionContext) fieldContext_Project_owner(ctx context.Context, fiel
 				return ec.fieldContext_User_email(ctx, field)
 			case "skills":
 				return ec.fieldContext_User_skills(ctx, field)
-			case "projects":
-				return ec.fieldContext_User_projects(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type User", field.Name)
 		},
@@ -1120,8 +1165,6 @@ func (ec *executionContext) fieldContext_Project_collaborators(ctx context.Conte
 				return ec.fieldContext_User_email(ctx, field)
 			case "skills":
 				return ec.fieldContext_User_skills(ctx, field)
-			case "projects":
-				return ec.fieldContext_User_projects(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type User", field.Name)
 		},
@@ -1180,8 +1223,6 @@ func (ec *executionContext) fieldContext_Query_users(ctx context.Context, field 
 				return ec.fieldContext_User_email(ctx, field)
 			case "skills":
 				return ec.fieldContext_User_skills(ctx, field)
-			case "projects":
-				return ec.fieldContext_User_projects(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type User", field.Name)
 		},
@@ -1241,6 +1282,69 @@ func (ec *executionContext) fieldContext_Query_projects(ctx context.Context, fie
 			}
 			return nil, fmt.Errorf("no field named %q was found under type Project", field.Name)
 		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Query_projectsByUser(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Query_projectsByUser(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Query().ProjectsByUser(rctx, fc.Args["id"].(string))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*model.UserProjects)
+	fc.Result = res
+	return ec.marshalNUserProjects2ᚖexampleᚋFindProMatesᚑApiᚋgraphᚋmodelᚐUserProjects(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Query_projectsByUser(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Query",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "owner":
+				return ec.fieldContext_UserProjects_owner(ctx, field)
+			case "owned":
+				return ec.fieldContext_UserProjects_owned(ctx, field)
+			case "collaborated":
+				return ec.fieldContext_UserProjects_collaborated(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type UserProjects", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Query_projectsByUser_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
 	}
 	return fc, nil
 }
@@ -1702,8 +1806,8 @@ func (ec *executionContext) fieldContext_User_skills(ctx context.Context, field 
 	return fc, nil
 }
 
-func (ec *executionContext) _User_projects(ctx context.Context, field graphql.CollectedField, obj *model.User) (ret graphql.Marshaler) {
-	fc, err := ec.fieldContext_User_projects(ctx, field)
+func (ec *executionContext) _UserProjects_owner(ctx context.Context, field graphql.CollectedField, obj *model.UserProjects) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_UserProjects_owner(ctx, field)
 	if err != nil {
 		return graphql.Null
 	}
@@ -1716,7 +1820,65 @@ func (ec *executionContext) _User_projects(ctx context.Context, field graphql.Co
 	}()
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return obj.Projects, nil
+		return obj.Owner, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*model.User)
+	fc.Result = res
+	return ec.marshalNUser2ᚖexampleᚋFindProMatesᚑApiᚋgraphᚋmodelᚐUser(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_UserProjects_owner(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "UserProjects",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_User_id(ctx, field)
+			case "firstName":
+				return ec.fieldContext_User_firstName(ctx, field)
+			case "lastName":
+				return ec.fieldContext_User_lastName(ctx, field)
+			case "username":
+				return ec.fieldContext_User_username(ctx, field)
+			case "email":
+				return ec.fieldContext_User_email(ctx, field)
+			case "skills":
+				return ec.fieldContext_User_skills(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type User", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _UserProjects_owned(ctx context.Context, field graphql.CollectedField, obj *model.UserProjects) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_UserProjects_owned(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Owned, nil
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -1733,9 +1895,65 @@ func (ec *executionContext) _User_projects(ctx context.Context, field graphql.Co
 	return ec.marshalNProject2ᚕᚖexampleᚋFindProMatesᚑApiᚋgraphᚋmodelᚐProjectᚄ(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) fieldContext_User_projects(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_UserProjects_owned(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
-		Object:     "User",
+		Object:     "UserProjects",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_Project_id(ctx, field)
+			case "name":
+				return ec.fieldContext_Project_name(ctx, field)
+			case "description":
+				return ec.fieldContext_Project_description(ctx, field)
+			case "owner":
+				return ec.fieldContext_Project_owner(ctx, field)
+			case "collaborators":
+				return ec.fieldContext_Project_collaborators(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type Project", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _UserProjects_collaborated(ctx context.Context, field graphql.CollectedField, obj *model.UserProjects) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_UserProjects_collaborated(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Collaborated, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.([]*model.Project)
+	fc.Result = res
+	return ec.marshalNProject2ᚕᚖexampleᚋFindProMatesᚑApiᚋgraphᚋmodelᚐProjectᚄ(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_UserProjects_collaborated(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "UserProjects",
 		Field:      field,
 		IsMethod:   false,
 		IsResolver: false,
@@ -3572,7 +3790,7 @@ func (ec *executionContext) unmarshalInputNewProject(ctx context.Context, obj in
 		asMap[k] = v
 	}
 
-	fieldsInOrder := [...]string{"name", "description", "contributors"}
+	fieldsInOrder := [...]string{"name", "description", "collaborators"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
@@ -3593,13 +3811,13 @@ func (ec *executionContext) unmarshalInputNewProject(ctx context.Context, obj in
 				return it, err
 			}
 			it.Description = data
-		case "contributors":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("contributors"))
+		case "collaborators":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("collaborators"))
 			data, err := ec.unmarshalNID2ᚕstringᚄ(ctx, v)
 			if err != nil {
 				return it, err
 			}
-			it.Contributors = data
+			it.Collaborators = data
 		}
 	}
 
@@ -3613,7 +3831,7 @@ func (ec *executionContext) unmarshalInputNewUser(ctx context.Context, obj inter
 		asMap[k] = v
 	}
 
-	fieldsInOrder := [...]string{"firstName", "lastName", "username", "password", "email"}
+	fieldsInOrder := [...]string{"firstName", "lastName", "username", "password", "email", "skills"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
@@ -3655,6 +3873,13 @@ func (ec *executionContext) unmarshalInputNewUser(ctx context.Context, obj inter
 				return it, err
 			}
 			it.Email = data
+		case "skills":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("skills"))
+			data, err := ec.unmarshalNString2ᚕstringᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Skills = data
 		}
 	}
 
@@ -3682,6 +3907,47 @@ func (ec *executionContext) unmarshalInputRefreshTokenInput(ctx context.Context,
 				return it, err
 			}
 			it.Token = data
+		}
+	}
+
+	return it, nil
+}
+
+func (ec *executionContext) unmarshalInputUpdateProject(ctx context.Context, obj interface{}) (model.UpdateProject, error) {
+	var it model.UpdateProject
+	asMap := map[string]interface{}{}
+	for k, v := range obj.(map[string]interface{}) {
+		asMap[k] = v
+	}
+
+	fieldsInOrder := [...]string{"name", "description", "collaborators"}
+	for _, k := range fieldsInOrder {
+		v, ok := asMap[k]
+		if !ok {
+			continue
+		}
+		switch k {
+		case "name":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("name"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Name = data
+		case "description":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("description"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Description = data
+		case "collaborators":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("collaborators"))
+			data, err := ec.unmarshalOID2ᚕstringᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Collaborators = data
 		}
 	}
 
@@ -3895,6 +4161,28 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 			}
 
 			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return rrm(innerCtx) })
+		case "projectsByUser":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Query_projectsByUser(ctx, field)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			rrm := func(ctx context.Context) graphql.Marshaler {
+				return ec.OperationContext.RootResolverMiddleware(ctx,
+					func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return rrm(innerCtx) })
 		case "project":
 			field := field
 
@@ -3986,8 +4274,52 @@ func (ec *executionContext) _User(ctx context.Context, sel ast.SelectionSet, obj
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
-		case "projects":
-			out.Values[i] = ec._User_projects(ctx, field, obj)
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var userProjectsImplementors = []string{"UserProjects"}
+
+func (ec *executionContext) _UserProjects(ctx context.Context, sel ast.SelectionSet, obj *model.UserProjects) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, userProjectsImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("UserProjects")
+		case "owner":
+			out.Values[i] = ec._UserProjects_owner(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "owned":
+			out.Values[i] = ec._UserProjects_owned(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "collaborated":
+			out.Values[i] = ec._UserProjects_collaborated(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
@@ -4585,6 +4917,20 @@ func (ec *executionContext) marshalNUser2ᚖexampleᚋFindProMatesᚑApiᚋgraph
 	return ec._User(ctx, sel, v)
 }
 
+func (ec *executionContext) marshalNUserProjects2exampleᚋFindProMatesᚑApiᚋgraphᚋmodelᚐUserProjects(ctx context.Context, sel ast.SelectionSet, v model.UserProjects) graphql.Marshaler {
+	return ec._UserProjects(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalNUserProjects2ᚖexampleᚋFindProMatesᚑApiᚋgraphᚋmodelᚐUserProjects(ctx context.Context, sel ast.SelectionSet, v *model.UserProjects) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._UserProjects(ctx, sel, v)
+}
+
 func (ec *executionContext) marshalN__Directive2githubᚗcomᚋ99designsᚋgqlgenᚋgraphqlᚋintrospectionᚐDirective(ctx context.Context, sel ast.SelectionSet, v introspection.Directive) graphql.Marshaler {
 	return ec.___Directive(ctx, sel, &v)
 }
@@ -4862,6 +5208,44 @@ func (ec *executionContext) marshalOBoolean2ᚖbool(ctx context.Context, sel ast
 	}
 	res := graphql.MarshalBoolean(*v)
 	return res
+}
+
+func (ec *executionContext) unmarshalOID2ᚕstringᚄ(ctx context.Context, v interface{}) ([]string, error) {
+	if v == nil {
+		return nil, nil
+	}
+	var vSlice []interface{}
+	if v != nil {
+		vSlice = graphql.CoerceList(v)
+	}
+	var err error
+	res := make([]string, len(vSlice))
+	for i := range vSlice {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithIndex(i))
+		res[i], err = ec.unmarshalNID2string(ctx, vSlice[i])
+		if err != nil {
+			return nil, err
+		}
+	}
+	return res, nil
+}
+
+func (ec *executionContext) marshalOID2ᚕstringᚄ(ctx context.Context, sel ast.SelectionSet, v []string) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	ret := make(graphql.Array, len(v))
+	for i := range v {
+		ret[i] = ec.marshalNID2string(ctx, sel, v[i])
+	}
+
+	for _, e := range ret {
+		if e == graphql.Null {
+			return graphql.Null
+		}
+	}
+
+	return ret
 }
 
 func (ec *executionContext) marshalOProject2ᚖexampleᚋFindProMatesᚑApiᚋgraphᚋmodelᚐProject(ctx context.Context, sel ast.SelectionSet, v *model.Project) graphql.Marshaler {

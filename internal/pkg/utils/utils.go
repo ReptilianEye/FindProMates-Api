@@ -1,89 +1,82 @@
 package utils
 
-import (
-	"context"
-	"encoding/json"
-	"example/FindProMates-Api/graph/model"
-	"example/FindProMates-Api/internal/app"
-	"example/FindProMates-Api/internal/database/projects"
-	"example/FindProMates-Api/internal/database/users"
-	"example/FindProMates-Api/internal/database/util_types"
-	"fmt"
-	"log"
-	"os"
-
-	"go.mongodb.org/mongo-driver/mongo"
-	"go.mongodb.org/mongo-driver/mongo/options"
-)
-
-func MapTo[E, V comparable](arr []E, mapper func(E) V) []V {
+func MapTo[E, V any](arr []E, mapper func(E) V) []V {
 	mapped := make([]V, len(arr))
 	for i, v := range arr {
 		mapped[i] = mapper(v)
 	}
 	return mapped
 }
-
-func MapToQueryUser(user users.User) *model.User {
-	return &model.User{
-		ID:        user.ID.Hex(),
-		FirstName: user.FirstName,
-		LastName:  user.LastName,
-		Username:  user.Username,
-		Email:     user.Email,
-		Skills: MapTo(user.Skills, func(skill util_types.Skill) string {
-			return skill.String()
-		}),
-		Projects: []*model.Project{},
-	}
-}
-
-func MapToQueryProject(project projects.Project) *model.Project {
-	owner, _ := app.App.Users.FindById(project.Owner.Hex())
-	return &model.Project{
-		ID:          project.ID.Hex(),
-		Name:        project.Name,
-		Description: project.Description,
-		Owner:       owner,
-		Team: MapTo(project.Team, func(user users.User) string {
-			return user.ID.Hex()
-		}),
-	}
-}
-
-func readFromDB() {
-	client, err := mongo.Connect(context.TODO(), options.Client().ApplyURI(os.Getenv("MONGODB_URI")))
-	if err != nil {
-		log.Fatal(err)
-	}
-	defer client.Disconnect(context.Background())
-	db := client.Database(os.Getenv("DB_NAME"))
-	usersColl := db.Collection("users")
-	projectsColl := db.Collection("projects")
-	file, err := os.ReadFile("dbschema/db.json")
-	if err != nil {
-		log.Fatal(err)
-	}
-	var db_sample map[string]interface{}
-	err = json.Unmarshal(file, &db_sample)
-	if err != nil {
-		log.Fatal(err)
-	}
-	for _, user := range db_sample["users"].([]interface{}) {
-		_, err := usersColl.InsertOne(context.Background(), user)
-		if err != nil {
-			fmt.Println(err)
-			// log.Fatal(err)
+func Any[E any](arr []E, predicate func(E) bool) bool {
+	for _, v := range arr {
+		if predicate(v) {
+			return true
 		}
 	}
-	for _, project := range db_sample["projects"].([]interface{}) {
-
-		res, err := projectsColl.InsertOne(context.Background(), project)
-		if err != nil {
-			fmt.Println(err)
-			// log.Fatal(err)
-		} else {
-			fmt.Println(res.InsertedID)
+	return false
+}
+func All[E any](arr []E, predicate func(E) bool) bool {
+	for _, v := range arr {
+		if !predicate(v) {
+			return false
 		}
 	}
+	return true
 }
+func Ternary[E any](condition bool, a, b E) E {
+	if condition {
+		return a
+	}
+	return b
+}
+func Keys[K comparable, V any](m map[K]V) []K {
+	keys := make([]K, 0, len(m))
+	for k := range m {
+		keys = append(keys, k)
+	}
+	return keys
+}
+func Values[K comparable, V any](m map[K]V) []V {
+	values := make([]V, 0, len(m))
+	for _, v := range m {
+		values = append(values, v)
+	}
+	return values
+}
+
+// func readFromDB() {
+// 	client, err := mongo.Connect(context.TODO(), options.Client().ApplyURI(os.Getenv("MONGODB_URI")))
+// 	if err != nil {
+// 		log.Fatal(err)
+// 	}
+// 	defer client.Disconnect(context.Background())
+// 	db := client.Database(os.Getenv("DB_NAME"))
+// 	usersColl := db.Collection("users")
+// 	projectsColl := db.Collection("projects")
+// 	file, err := os.ReadFile("dbschema/db.json")
+// 	if err != nil {
+// 		log.Fatal(err)
+// 	}
+// 	var db_sample map[string]interface{}
+// 	err = json.Unmarshal(file, &db_sample)
+// 	if err != nil {
+// 		log.Fatal(err)
+// 	}
+// 	for _, user := range db_sample["users"].([]interface{}) {
+// 		_, err := usersColl.InsertOne(context.Background(), user)
+// 		if err != nil {
+// 			fmt.Println(err)
+// 			// log.Fatal(err)
+// 		}
+// 	}
+// 	for _, project := range db_sample["projects"].([]interface{}) {
+
+// 		res, err := projectsColl.InsertOne(context.Background(), project)
+// 		if err != nil {
+// 			fmt.Println(err)
+// 			// log.Fatal(err)
+// 		} else {
+// 			fmt.Println(res.InsertedID)
+// 		}
+// 	}
+// }
