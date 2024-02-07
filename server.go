@@ -3,7 +3,7 @@ package main
 import (
 	"example/FindProMates-Api/graph"
 	"example/FindProMates-Api/internal/app"
-	database "example/FindProMates-Api/internal/db"
+	"example/FindProMates-Api/internal/database"
 	"log"
 	"net/http"
 	"os"

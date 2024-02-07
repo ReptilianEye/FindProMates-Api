@@ -7,7 +7,6 @@ package graph
 import (
 	"context"
 	"example/FindProMates-Api/graph/model"
-	application "example/FindProMates-Api/internal/app"
 	"fmt"
 )
 
@@ -38,8 +37,7 @@ func (r *mutationResolver) RefreshToken(ctx context.Context, input model.Refresh
 
 // Users is the resolver for the users field.
 func (r *queryResolver) Users(ctx context.Context) ([]*model.User, error) {
-	users, err := application.App.Users.All()
-	return &users, err
+	panic(fmt.Errorf("not implemented: Users - users"))
 }
 
 // Projects is the resolver for the projects field.

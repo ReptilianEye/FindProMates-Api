@@ -1,8 +1,8 @@
 package app
 
 import (
-	database "example/FindProMates-Api/internal/db"
-	"example/FindProMates-Api/internal/models/mongodb"
+	"example/FindProMates-Api/internal/database"
+	"example/FindProMates-Api/internal/database/mongodb"
 )
 
 var App *Application
