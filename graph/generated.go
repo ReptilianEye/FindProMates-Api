@@ -56,11 +56,11 @@ type ComplexityRoot struct {
 	}
 
 	Project struct {
-		Contributors func(childComplexity int) int
-		Description  func(childComplexity int) int
-		ID           func(childComplexity int) int
-		Name         func(childComplexity int) int
-		Owner        func(childComplexity int) int
+		Collaborators func(childComplexity int) int
+		Description   func(childComplexity int) int
+		ID            func(childComplexity int) int
+		Name          func(childComplexity int) int
+		Owner         func(childComplexity int) int
 	}
 
 	Query struct {
@@ -74,6 +74,8 @@ type ComplexityRoot struct {
 		FirstName func(childComplexity int) int
 		ID        func(childComplexity int) int
 		LastName  func(childComplexity int) int
+		Projects  func(childComplexity int) int
+		Skills    func(childComplexity int) int
 		Username  func(childComplexity int) int
 	}
 }
@@ -170,12 +172,12 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.Mutation.UpdateProject(childComplexity, args["id"].(string), args["input"].(model.NewProject)), true
 
-	case "Project.contributors":
-		if e.complexity.Project.Contributors == nil {
+	case "Project.collaborators":
+		if e.complexity.Project.Collaborators == nil {
 			break
 		}
 
-		return e.complexity.Project.Contributors(childComplexity), true
+		return e.complexity.Project.Collaborators(childComplexity), true
 
 	case "Project.description":
 		if e.complexity.Project.Description == nil {
@@ -258,6 +260,20 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.User.LastName(childComplexity), true
+
+	case "User.projects":
+		if e.complexity.User.Projects == nil {
+			break
+		}
+
+		return e.complexity.User.Projects(childComplexity), true
+
+	case "User.skills":
+		if e.complexity.User.Skills == nil {
+			break
+		}
+
+		return e.complexity.User.Skills(childComplexity), true
 
 	case "User.username":
 		if e.complexity.User.Username == nil {
@@ -595,6 +611,10 @@ func (ec *executionContext) fieldContext_Mutation_createUser(ctx context.Context
 				return ec.fieldContext_User_username(ctx, field)
 			case "email":
 				return ec.fieldContext_User_email(ctx, field)
+			case "skills":
+				return ec.fieldContext_User_skills(ctx, field)
+			case "projects":
+				return ec.fieldContext_User_projects(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type User", field.Name)
 		},
@@ -660,8 +680,8 @@ func (ec *executionContext) fieldContext_Mutation_createProject(ctx context.Cont
 				return ec.fieldContext_Project_description(ctx, field)
 			case "owner":
 				return ec.fieldContext_Project_owner(ctx, field)
-			case "contributors":
-				return ec.fieldContext_Project_contributors(ctx, field)
+			case "collaborators":
+				return ec.fieldContext_Project_collaborators(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type Project", field.Name)
 		},
@@ -727,8 +747,8 @@ func (ec *executionContext) fieldContext_Mutation_updateProject(ctx context.Cont
 				return ec.fieldContext_Project_description(ctx, field)
 			case "owner":
 				return ec.fieldContext_Project_owner(ctx, field)
-			case "contributors":
-				return ec.fieldContext_Project_contributors(ctx, field)
+			case "collaborators":
+				return ec.fieldContext_Project_collaborators(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type Project", field.Name)
 		},
@@ -1038,6 +1058,10 @@ func (ec *executionContext) fieldContext_Project_owner(ctx context.Context, fiel
 				return ec.fieldContext_User_username(ctx, field)
 			case "email":
 				return ec.fieldContext_User_email(ctx, field)
+			case "skills":
+				return ec.fieldContext_User_skills(ctx, field)
+			case "projects":
+				return ec.fieldContext_User_projects(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type User", field.Name)
 		},
@@ -1045,8 +1069,8 @@ func (ec *executionContext) fieldContext_Project_owner(ctx context.Context, fiel
 	return fc, nil
 }
 
-func (ec *executionContext) _Project_contributors(ctx context.Context, field graphql.CollectedField, obj *model.Project) (ret graphql.Marshaler) {
-	fc, err := ec.fieldContext_Project_contributors(ctx, field)
+func (ec *executionContext) _Project_collaborators(ctx context.Context, field graphql.CollectedField, obj *model.Project) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Project_collaborators(ctx, field)
 	if err != nil {
 		return graphql.Null
 	}
@@ -1059,7 +1083,7 @@ func (ec *executionContext) _Project_contributors(ctx context.Context, field gra
 	}()
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return obj.Contributors, nil
+		return obj.Collaborators, nil
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -1076,7 +1100,7 @@ func (ec *executionContext) _Project_contributors(ctx context.Context, field gra
 	return ec.marshalNUser2ᚕᚖexampleᚋFindProMatesᚑApiᚋgraphᚋmodelᚐUserᚄ(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) fieldContext_Project_contributors(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_Project_collaborators(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "Project",
 		Field:      field,
@@ -1094,6 +1118,10 @@ func (ec *executionContext) fieldContext_Project_contributors(ctx context.Contex
 				return ec.fieldContext_User_username(ctx, field)
 			case "email":
 				return ec.fieldContext_User_email(ctx, field)
+			case "skills":
+				return ec.fieldContext_User_skills(ctx, field)
+			case "projects":
+				return ec.fieldContext_User_projects(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type User", field.Name)
 		},
@@ -1150,6 +1178,10 @@ func (ec *executionContext) fieldContext_Query_users(ctx context.Context, field 
 				return ec.fieldContext_User_username(ctx, field)
 			case "email":
 				return ec.fieldContext_User_email(ctx, field)
+			case "skills":
+				return ec.fieldContext_User_skills(ctx, field)
+			case "projects":
+				return ec.fieldContext_User_projects(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type User", field.Name)
 		},
@@ -1204,8 +1236,8 @@ func (ec *executionContext) fieldContext_Query_projects(ctx context.Context, fie
 				return ec.fieldContext_Project_description(ctx, field)
 			case "owner":
 				return ec.fieldContext_Project_owner(ctx, field)
-			case "contributors":
-				return ec.fieldContext_Project_contributors(ctx, field)
+			case "collaborators":
+				return ec.fieldContext_Project_collaborators(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type Project", field.Name)
 		},
@@ -1257,8 +1289,8 @@ func (ec *executionContext) fieldContext_Query_project(ctx context.Context, fiel
 				return ec.fieldContext_Project_description(ctx, field)
 			case "owner":
 				return ec.fieldContext_Project_owner(ctx, field)
-			case "contributors":
-				return ec.fieldContext_Project_contributors(ctx, field)
+			case "collaborators":
+				return ec.fieldContext_Project_collaborators(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type Project", field.Name)
 		},
@@ -1621,6 +1653,106 @@ func (ec *executionContext) fieldContext_User_email(ctx context.Context, field g
 		IsResolver: false,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _User_skills(ctx context.Context, field graphql.CollectedField, obj *model.User) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_User_skills(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Skills, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.([]string)
+	fc.Result = res
+	return ec.marshalNString2ᚕstringᚄ(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_User_skills(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "User",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _User_projects(ctx context.Context, field graphql.CollectedField, obj *model.User) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_User_projects(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Projects, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.([]*model.Project)
+	fc.Result = res
+	return ec.marshalNProject2ᚕᚖexampleᚋFindProMatesᚑApiᚋgraphᚋmodelᚐProjectᚄ(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_User_projects(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "User",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_Project_id(ctx, field)
+			case "name":
+				return ec.fieldContext_Project_name(ctx, field)
+			case "description":
+				return ec.fieldContext_Project_description(ctx, field)
+			case "owner":
+				return ec.fieldContext_Project_owner(ctx, field)
+			case "collaborators":
+				return ec.fieldContext_Project_collaborators(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type Project", field.Name)
 		},
 	}
 	return fc, nil
@@ -3672,8 +3804,8 @@ func (ec *executionContext) _Project(ctx context.Context, sel ast.SelectionSet, 
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
-		case "contributors":
-			out.Values[i] = ec._Project_contributors(ctx, field, obj)
+		case "collaborators":
+			out.Values[i] = ec._Project_collaborators(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
@@ -3846,6 +3978,16 @@ func (ec *executionContext) _User(ctx context.Context, sel ast.SelectionSet, obj
 			}
 		case "email":
 			out.Values[i] = ec._User_email(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "skills":
+			out.Values[i] = ec._User_skills(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "projects":
+			out.Values[i] = ec._User_projects(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
@@ -4351,6 +4493,38 @@ func (ec *executionContext) marshalNString2string(ctx context.Context, sel ast.S
 		}
 	}
 	return res
+}
+
+func (ec *executionContext) unmarshalNString2ᚕstringᚄ(ctx context.Context, v interface{}) ([]string, error) {
+	var vSlice []interface{}
+	if v != nil {
+		vSlice = graphql.CoerceList(v)
+	}
+	var err error
+	res := make([]string, len(vSlice))
+	for i := range vSlice {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithIndex(i))
+		res[i], err = ec.unmarshalNString2string(ctx, vSlice[i])
+		if err != nil {
+			return nil, err
+		}
+	}
+	return res, nil
+}
+
+func (ec *executionContext) marshalNString2ᚕstringᚄ(ctx context.Context, sel ast.SelectionSet, v []string) graphql.Marshaler {
+	ret := make(graphql.Array, len(v))
+	for i := range v {
+		ret[i] = ec.marshalNString2string(ctx, sel, v[i])
+	}
+
+	for _, e := range ret {
+		if e == graphql.Null {
+			return graphql.Null
+		}
+	}
+
+	return ret
 }
 
 func (ec *executionContext) marshalNUser2exampleᚋFindProMatesᚑApiᚋgraphᚋmodelᚐUser(ctx context.Context, sel ast.SelectionSet, v model.User) graphql.Marshaler {

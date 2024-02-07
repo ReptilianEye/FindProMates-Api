@@ -23,7 +23,8 @@ func main() {
 	router := chi.NewRouter()
 
 	app.InitApp()
-	database.InitDB()
+	cancel := database.InitDB()
+	defer cancel()
 	defer database.CloseDB()
 
 	srv := handler.NewDefaultServer(graph.NewExecutableSchema(graph.Config{Resolvers: &graph.Resolver{}}))

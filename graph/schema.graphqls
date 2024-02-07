@@ -8,6 +8,8 @@ type User {
   lastName: String!
   username: String!
   email: String!
+  skills: [String!]!
+  projects: [Project!]!
 }
 
 type Project {
@@ -15,7 +17,7 @@ type Project {
   name: String!
   description: String!
   owner: User!
-  contributors: [User!]!
+  collaborators: [User!]!
 }
 
 input NewUser {

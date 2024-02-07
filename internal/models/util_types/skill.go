@@ -1,5 +1,6 @@
 package util_types
 
+//types not stored in the database
 type Skill string
 
 const (

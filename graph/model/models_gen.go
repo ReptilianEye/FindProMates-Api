@@ -25,11 +25,11 @@ type NewUser struct {
 }
 
 type Project struct {
-	ID           string  `json:"id"`
-	Name         string  `json:"name"`
-	Description  string  `json:"description"`
-	Owner        *User   `json:"owner"`
-	Contributors []*User `json:"contributors"`
+	ID            string  `json:"id"`
+	Name          string  `json:"name"`
+	Description   string  `json:"description"`
+	Owner         *User   `json:"owner"`
+	Collaborators []*User `json:"collaborators"`
 }
 
 type Query struct {
@@ -40,9 +40,11 @@ type RefreshTokenInput struct {
 }
 
 type User struct {
-	ID        string `json:"id"`
-	FirstName string `json:"firstName"`
-	LastName  string `json:"lastName"`
-	Username  string `json:"username"`
-	Email     string `json:"email"`
+	ID        string     `json:"id"`
+	FirstName string     `json:"firstName"`
+	LastName  string     `json:"lastName"`
+	Username  string     `json:"username"`
+	Email     string     `json:"email"`
+	Skills    []string   `json:"skills"`
+	Projects  []*Project `json:"projects"`
 }
