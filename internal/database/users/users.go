@@ -1,8 +1,7 @@
-package mongodb
+package users
 
 import (
 	"context"
-	"example/FindProMates-Api/internal/models"
 
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -23,9 +22,9 @@ const (
 )
 
 // All returns all users from the MongoDB collection.
-func (m *UserModel) All() ([]models.User, error) {
+func (m *UserModel) All() ([]User, error) {
 	ctx := context.TODO()
-	users := []models.User{}
+	users := []User{}
 
 	cursor, err := m.C.Find(ctx, bson.M{})
 	if err != nil {
@@ -37,7 +36,7 @@ func (m *UserModel) All() ([]models.User, error) {
 	}
 	return users, nil
 }
-func (m *UserModel) FindById(id string) (*models.User, error) {
+func (m *UserModel) FindById(id string) (*User, error) {
 	users, err := m.FindByParameters(map[string]string{Id: id})
 	if err != nil {
 		return nil, err
@@ -45,7 +44,7 @@ func (m *UserModel) FindById(id string) (*models.User, error) {
 	return &users[0], nil
 }
 
-func (m *UserModel) FindByParameters(params map[string]string) ([]models.User, error) {
+func (m *UserModel) FindByParameters(params map[string]string) ([]User, error) {
 	query := bson.M{}
 	for key, value := range params {
 		query[key] = value
@@ -55,7 +54,7 @@ func (m *UserModel) FindByParameters(params map[string]string) ([]models.User, e
 	if err != nil {
 		return nil, err
 	}
-	users := []models.User{}
+	users := []User{}
 	err = cursor.All(ctx, &users)
 	if err != nil {
 		return nil, err

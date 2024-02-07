@@ -2,22 +2,23 @@ package app
 
 import (
 	"example/FindProMates-Api/internal/database"
-	"example/FindProMates-Api/internal/database/mongodb"
+	"example/FindProMates-Api/internal/database/projects"
+	"example/FindProMates-Api/internal/database/users"
 )
 
 var App *Application
 
 type Application struct {
-	Projects *mongodb.ProjectModel
-	Users    *mongodb.UserModel
+	Projects *projects.ProjectModel
+	Users    *users.UserModel
 }
 
 func InitApp() {
 	App = &Application{
-		Projects: &mongodb.ProjectModel{
+		Projects: &projects.ProjectModel{
 			C: database.Db.Collection("projects"),
 		},
-		Users: &mongodb.UserModel{
+		Users: &users.UserModel{
 			C: database.Db.Collection("users"),
 		},
 	}

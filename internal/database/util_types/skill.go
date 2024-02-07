@@ -11,3 +11,7 @@ const (
 	React      Skill = "React"
 	Angular    Skill = "Angular"
 )
+
+func (s Skill) String() string {
+	return string(s)
+}

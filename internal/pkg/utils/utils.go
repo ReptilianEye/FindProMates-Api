@@ -3,6 +3,11 @@ package utils
 import (
 	"context"
 	"encoding/json"
+	"example/FindProMates-Api/graph/model"
+	"example/FindProMates-Api/internal/app"
+	"example/FindProMates-Api/internal/database/projects"
+	"example/FindProMates-Api/internal/database/users"
+	"example/FindProMates-Api/internal/database/util_types"
 	"fmt"
 	"log"
 	"os"
@@ -17,6 +22,33 @@ func MapTo[E, V comparable](arr []E, mapper func(E) V) []V {
 		mapped[i] = mapper(v)
 	}
 	return mapped
+}
+
+func MapToQueryUser(user users.User) *model.User {
+	return &model.User{
+		ID:        user.ID.Hex(),
+		FirstName: user.FirstName,
+		LastName:  user.LastName,
+		Username:  user.Username,
+		Email:     user.Email,
+		Skills: MapTo(user.Skills, func(skill util_types.Skill) string {
+			return skill.String()
+		}),
+		Projects: []*model.Project{},
+	}
+}
+
+func MapToQueryProject(project projects.Project) *model.Project {
+	owner, _ := app.App.Users.FindById(project.Owner.Hex())
+	return &model.Project{
+		ID:          project.ID.Hex(),
+		Name:        project.Name,
+		Description: project.Description,
+		Owner:       owner,
+		Team: MapTo(project.Team, func(user users.User) string {
+			return user.ID.Hex()
+		}),
+	}
 }
 
 func readFromDB() {
