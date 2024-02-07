@@ -2,6 +2,7 @@ package users
 
 import (
 	"context"
+	"example/FindProMates-Api/internal/pkg/utils"
 	"log"
 
 	"go.mongodb.org/mongo-driver/bson"
@@ -76,10 +77,16 @@ func (m *UserModel) FindByParameters(params map[string]string) ([]User, error) {
 }
 
 func (m *UserModel) Create(user *User) (*User, error) {
-	_, err := m.C.InsertOne(ctx, user)
+	hashedPassword, err := utils.HashPassword(user.Password)
 	if err != nil {
 		return nil, err
 	}
+	user.Password = hashedPassword
+	result, err := m.C.InsertOne(ctx, user)
+	if err != nil {
+		return nil, err
+	}
+	user.ID = result.InsertedID.(primitive.ObjectID)
 	return user, nil
 }
 

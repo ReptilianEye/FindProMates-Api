@@ -9,9 +9,9 @@ import (
 	"example/FindProMates-Api/graph/model"
 	"example/FindProMates-Api/internal/app"
 	"example/FindProMates-Api/internal/auth"
-	queryutils "example/FindProMates-Api/internal/database/query_utils"
 	"example/FindProMates-Api/internal/pkg/jwt"
 	"example/FindProMates-Api/internal/pkg/utils"
+	"example/FindProMates-Api/internal/resolvers"
 	"fmt"
 
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -19,12 +19,12 @@ import (
 
 // CreateUser is the resolver for the createUser field.
 func (r *mutationResolver) CreateUser(ctx context.Context, input model.NewUser) (*model.User, error) {
-	user := queryutils.MapToUser(input)
+	user := resolvers.MapToUser(input)
 	_, err := app.App.Users.Create(&user)
 	if err != nil {
 		return nil, err
 	}
-	return queryutils.MapToQueryUser(user), nil
+	return resolvers.MapToQueryUser(user), nil
 }
 
 // CreateProject is the resolver for the createProject field.
@@ -37,12 +37,12 @@ func (r *mutationResolver) CreateProject(ctx context.Context, input model.NewPro
 	if err != nil {
 		return nil, err
 	}
-	project := queryutils.MapToProject(input, ownerId)
+	project := resolvers.MapToProject(input, ownerId)
 	_, err = app.App.Projects.Create(&project)
 	if err != nil {
 		return nil, err
 	}
-	return queryutils.MapToQueryProject(project), nil
+	return resolvers.MapToQueryProject(project), nil
 }
 
 // UpdateProject is the resolver for the updateProject field.
@@ -54,7 +54,7 @@ func (r *mutationResolver) UpdateProject(ctx context.Context, id string, input m
 func (r *mutationResolver) Login(ctx context.Context, input model.Login) (string, error) {
 	username := input.Username
 	password := input.Password
-	if app.App.Users.Authenticate(username, password) {
+	if !app.App.Users.Authenticate(username, password) {
 		return "", fmt.Errorf("username or password is incorrect")
 	}
 	id, err := app.App.Users.FindByUsername(username)
@@ -79,7 +79,7 @@ func (r *queryResolver) Users(ctx context.Context) ([]*model.User, error) {
 	if err != nil {
 		return nil, err
 	}
-	return utils.MapTo(usersArr, queryutils.MapToQueryUser), nil
+	return utils.MapTo(usersArr, resolvers.MapToQueryUser), nil
 }
 
 // Projects is the resolver for the projects field.
@@ -88,7 +88,7 @@ func (r *queryResolver) Projects(ctx context.Context) ([]*model.Project, error) 
 	if err != nil {
 		return nil, err
 	}
-	return utils.MapTo(projectsArr, queryutils.MapToQueryProject), nil
+	return utils.MapTo(projectsArr, resolvers.MapToQueryProject), nil
 }
 
 // ProjectsByUser is the resolver for the projectsByUser field.
@@ -113,20 +113,23 @@ func (r *queryResolver) ProjectsByUser(ctx context.Context, id string) (*model.U
 		return nil, err
 	}
 	return &model.UserProjects{
-		Owner:        queryutils.MapToQueryUser(*owner),
-		Owned:        utils.MapTo(projects, queryutils.MapToQueryProject),
-		Collaborated: utils.MapTo(collaboratedProjects, queryutils.MapToQueryProject),
+		Owner:        resolvers.MapToQueryUser(*owner),
+		Owned:        utils.MapTo(projects, resolvers.MapToQueryProject),
+		Collaborated: utils.MapTo(collaboratedProjects, resolvers.MapToQueryProject),
 	}, nil
 }
 
 // Project is the resolver for the project field.
 func (r *queryResolver) Project(ctx context.Context, id string) (*model.Project, error) {
 	idObj, err := primitive.ObjectIDFromHex(id)
+	if err != nil {
+		return nil, err
+	}
 	project, err := app.App.Projects.FindById(idObj)
 	if err != nil {
 		return nil, err
 	}
-	return queryutils.MapToQueryProject(*project), nil
+	return resolvers.MapToQueryProject(*project), nil
 }
 
 // Mutation returns MutationResolver implementation.

@@ -18,6 +18,8 @@ import (
 
 const defaultPort = "8080"
 
+type E any
+
 func main() {
 	port := os.Getenv("PORT")
 	if port == "" {
@@ -27,6 +29,7 @@ func main() {
 
 	router.Use(middleware.Logger)
 	router.Use(auth.Middleware)
+	router.Use(middleware.Recoverer)
 
 	cancel := database.InitDB()
 	defer cancel()

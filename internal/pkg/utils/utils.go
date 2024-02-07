@@ -1,5 +1,18 @@
 package utils
 
+import (
+	"math/rand"
+	"strconv"
+	"strings"
+
+	"golang.org/x/crypto/bcrypt"
+)
+
+func HashPassword(password string) (string, error) {
+	bytes, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
+	return string(bytes), err
+}
+
 func MapTo[E, V any](arr []E, mapper func(E) V) []V {
 	mapped := make([]V, len(arr))
 	for i, v := range arr {
@@ -29,6 +42,7 @@ func Ternary[E any](condition bool, a, b E) E {
 	}
 	return b
 }
+
 func Keys[K comparable, V any](m map[K]V) []K {
 	keys := make([]K, 0, len(m))
 	for k := range m {
@@ -42,6 +56,16 @@ func Values[K comparable, V any](m map[K]V) []V {
 		values = append(values, v)
 	}
 	return values
+}
+func CreateUsername(firstName, lastName string) string {
+	return strings.ToLower(firstName) + "_" + strings.ToLower(lastName) + randomNumbersSufix(3)
+}
+func randomNumbersSufix(length int) string {
+	res := ""
+	for i := 0; i < length; i++ {
+		res += strconv.Itoa(rand.Intn(10))
+	}
+	return res
 }
 
 // func readFromDB() {

@@ -72,10 +72,11 @@ func (m *ProjectModel) FindAllUserIsCollaborator(user primitive.ObjectID) ([]Pro
 }
 
 func (m *ProjectModel) Create(project *Project) (*Project, error) {
-	_, err := m.C.InsertOne(context.TODO(), project)
+	result, err := m.C.InsertOne(context.TODO(), project)
 	if err != nil {
 		return nil, err
 	}
+	project.ID = result.InsertedID.(primitive.ObjectID)
 	return project, nil
 }
 

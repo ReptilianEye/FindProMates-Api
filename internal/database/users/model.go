@@ -16,6 +16,6 @@ type User struct {
 	Username  string             `bson:"username,omitempty"`
 	Email     string             `bson:"email,omitempty"`
 	Password  string             `bson:"password,omitempty"`
-	Skills    []util_types.Skill `bson:"interests"`
-	Projects  []projects.Project `bson:"projects"`
+	Skills    []util_types.Skill `bson:"skills,omitempty"`
+	Projects  []projects.Project `bson:"projects,omitempty"`
 }
