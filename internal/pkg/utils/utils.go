@@ -36,9 +36,15 @@ func All[E any](arr []E, predicate func(E) bool) bool {
 	}
 	return true
 }
-func Ternary[E any](condition bool, a, b E) E {
+func Ternary(condition bool, a, b any) any {
 	if condition {
 		return a
+	}
+	return b
+}
+func Elivis[E any](a *E, b E) E {
+	if a != nil {
+		return *a
 	}
 	return b
 }

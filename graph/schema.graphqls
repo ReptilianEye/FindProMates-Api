@@ -37,7 +37,7 @@ input NewUser {
 input NewProject {
   name: String!
   description: String
-  collaborators: [ID!]!
+  collaborators: [ID!]
 }
 
 input UpdateProject {
