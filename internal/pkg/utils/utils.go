@@ -134,6 +134,17 @@ func Values[K comparable, V any](m map[K]V) []V {
 	}
 	return values
 }
+func Equal[E comparable](a, b []E) bool {
+	if len(a) != len(b) {
+		return false
+	}
+	for i, v := range a {
+		if v != b[i] {
+			return false
+		}
+	}
+	return true
+}
 func CreateUsername(firstName, lastName string) string {
 	return strings.ToLower(firstName) + "_" + strings.ToLower(lastName) + randomNumbersSufix(3)
 }
