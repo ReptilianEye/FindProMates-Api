@@ -2,10 +2,8 @@ package main
 
 import (
 	"example/FindProMates-Api/graph"
-	"example/FindProMates-Api/internal/app"
 	"example/FindProMates-Api/internal/auth"
 	"example/FindProMates-Api/internal/database"
-	"example/FindProMates-Api/internal/pkg/jwt"
 	"log"
 	"net/http"
 	"os"
@@ -21,6 +19,10 @@ const defaultPort = "8080"
 type E any
 
 func main() {
+	cancel := database.InitDB()
+	defer cancel()
+	defer database.CloseDB()
+
 	port := os.Getenv("PORT")
 	if port == "" {
 		port = defaultPort
@@ -30,12 +32,6 @@ func main() {
 	router.Use(middleware.Logger)
 	router.Use(auth.Middleware)
 	router.Use(middleware.Recoverer)
-
-	cancel := database.InitDB()
-	defer cancel()
-	defer database.CloseDB()
-	app.InitApp()
-	jwt.InitJWT()
 
 	srv := handler.NewDefaultServer(graph.NewExecutableSchema(graph.Config{Resolvers: &graph.Resolver{}}))
 

@@ -1,7 +1,6 @@
-package utils_test
+package utils
 
 import (
-	"example/FindProMates-Api/internal/pkg/utils"
 	"slices"
 	"strconv"
 	"testing"
@@ -12,7 +11,7 @@ func TestMapTo(t *testing.T) {
 		arr := []int{1, 2, 3}
 		fn := func(i int) string { return strconv.Itoa(i) }
 		want := []string{"1", "2", "3"}
-		if got := utils.MapTo(arr, fn); !slices.Equal(got, want) {
+		if got := MapTo(arr, fn); !slices.Equal(got, want) {
 			t.Errorf("MapTo() = %v, want %v", got, want)
 		}
 	})
@@ -20,7 +19,7 @@ func TestMapTo(t *testing.T) {
 		arr := []string{"1", "2", "3"}
 		fn := func(s string) int { i, _ := strconv.Atoi(s); return i }
 		want := []int{1, 2, 3}
-		if got := utils.MapTo(arr, fn); !slices.Equal(got, want) {
+		if got := MapTo(arr, fn); !slices.Equal(got, want) {
 			t.Errorf("MapTo() = %v, want %v", got, want)
 		}
 	})
@@ -36,7 +35,7 @@ func TestMapTo(t *testing.T) {
 		}
 		fn := func(s MyStruct) int { return s.ID }
 		want := []int{1, 2, 3}
-		if got := utils.MapTo(arr, fn); !slices.Equal(got, want) {
+		if got := MapTo(arr, fn); !slices.Equal(got, want) {
 			t.Errorf("MapTo() = %v, want %v", got, want)
 		}
 	})
@@ -47,14 +46,14 @@ func TestAll(t *testing.T) {
 	t.Run("TestAllTrue", func(t *testing.T) {
 		arr := []int{1, 2, 3}
 		fn := func(i int) bool { return i > 0 }
-		if got := utils.All(arr, fn); !got {
+		if got := All(arr, fn); !got {
 			t.Errorf("All() = %v, want %v", got, true)
 		}
 	})
 	t.Run("TestAllFalse", func(t *testing.T) {
 		arr := []int{1, 2, 3}
 		fn := func(i int) bool { return i > 1 }
-		if got := utils.All(arr, fn); got {
+		if got := All(arr, fn); got {
 			t.Errorf("All() = %v, want %v", got, false)
 		}
 	})
@@ -63,14 +62,14 @@ func TestAny(t *testing.T) {
 	t.Run("TestAnyTrue", func(t *testing.T) {
 		arr := []int{1, 2, 3}
 		fn := func(i int) bool { return i > 2 }
-		if got := utils.Any(arr, fn); !got {
+		if got := Any(arr, fn); !got {
 			t.Errorf("Any() = %v, want %v", got, true)
 		}
 	})
 	t.Run("TestAnyFalse", func(t *testing.T) {
 		arr := []int{1, 2, 3}
 		fn := func(i int) bool { return i > 3 }
-		if got := utils.Any(arr, fn); got {
+		if got := Any(arr, fn); got {
 			t.Errorf("Any() = %v, want %v", got, false)
 		}
 	})
@@ -78,12 +77,12 @@ func TestAny(t *testing.T) {
 
 func TestTernary(t *testing.T) {
 	t.Run("TestTernaryTrue", func(t *testing.T) {
-		if got := utils.Ternary(true, 1, 2); got != 1 {
+		if got := Ternary(true, 1, 2); got != 1 {
 			t.Errorf("Ternary() = %v, want %v", got, 1)
 		}
 	})
 	t.Run("TestTernaryFalse", func(t *testing.T) {
-		if got := utils.Ternary(false, 1, 2); got != 2 {
+		if got := Ternary(false, 1, 2); got != 2 {
 			t.Errorf("Ternary() = %v, want %v", got, 2)
 		}
 	})
@@ -93,14 +92,14 @@ func TestElivis(t *testing.T) {
 	t.Run("TestElivisTrue", func(t *testing.T) {
 		a := "a"
 		b := "b"
-		if got := utils.Elivis(&a, b); got != a {
+		if got := Elivis(&a, b); got != a {
 			t.Errorf("Elivis() = %v, want %v", got, a)
 		}
 	})
 	t.Run("TestElivisFalse", func(t *testing.T) {
 		var a *string
 		b := "b"
-		if got := utils.Elivis(a, b); got != b {
+		if got := Elivis(a, b); got != b {
 			t.Errorf("Elivis() = %v, want %v", got, b)
 		}
 	})
@@ -110,7 +109,7 @@ func TestKeys(t *testing.T) {
 	t.Run("TestKeys", func(t *testing.T) {
 		m := map[string]int{"a": 1, "b": 2, "c": 3}
 		want := []string{"a", "b", "c"}
-		if got := utils.Keys(m); !slices.Equal(got, want) {
+		if got := Keys(m); !slices.Equal(got, want) {
 			t.Errorf("Keys() = %v, want %v", got, want)
 		}
 	})
@@ -119,7 +118,7 @@ func TestKeys(t *testing.T) {
 func TestValues(t *testing.T) {
 	t.Run("TestValues", func(t *testing.T) {
 		m := map[string]int{"a": 1, "b": 2, "c": 3}
-		got := utils.Values(m)
+		got := Values(m)
 		want := []int{1, 2, 3}
 		for _, v := range got {
 			if !slices.Contains(want, v) {
@@ -165,7 +164,7 @@ func TestSet(t *testing.T) {
 		a := []int{1, 2, 3, 5, 4, 2, 1, 1}
 		want := []int{1, 2, 3, 5, 4}
 		mapper := func(i int) string { return strconv.Itoa(i) }
-		got := utils.ToSet(a, mapper)
+		got := ToSet(a, mapper)
 		if len(got) != len(want) {
 			t.Errorf("Set() = %v, want %v", got, want)
 		}
@@ -179,7 +178,7 @@ func TestSet(t *testing.T) {
 		a := []int{1, 2, 3, 5, 4, 2, 1, 1}
 		want := []int{1, 2, 3, 5, 4}
 		mapper := func(i int) string { return strconv.Itoa(i) }
-		got := utils.ToSlice(utils.ToSet(a, mapper), func(s string) int {
+		got := ToSlice(ToSet(a, mapper), func(s string) int {
 			i, _ := strconv.Atoi(s)
 			return i
 		}, "1", "5", "2")
@@ -207,7 +206,7 @@ func TestSet(t *testing.T) {
 		b := []int{1, 1, 4, 10, 12}
 		want := []int{1, 2, 3, 5, 4, 10, 12}
 		mapper := func(i int) string { return strconv.Itoa(i) }
-		got := utils.ToSet(a, mapper).Union(utils.ToSet(b, mapper))
+		got := ToSet(a, mapper).Union(ToSet(b, mapper))
 		if len(got) != len(want) {
 			t.Errorf("Set() = %v, want %v", got, want)
 		}
@@ -222,7 +221,7 @@ func TestSet(t *testing.T) {
 		b := []int{5, 2, 5, 2, 3, 4, 7, 9, 10}
 		want := []int{5, 2, 10}
 		mapper := func(i int) string { return strconv.Itoa(i) }
-		got := utils.ToSet(a, mapper).Intersection(utils.ToSet(b, mapper))
+		got := ToSet(a, mapper).Intersection(ToSet(b, mapper))
 		if len(got) != len(want) {
 			t.Errorf("Set() = %v, want %v", got, want)
 		}
