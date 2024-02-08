@@ -11,6 +11,10 @@ import (
 
 type Set map[string]bool
 
+// ToSet converts a slice to a set using the provided mapper function.
+// The mapper function is used to generate unique keys for each element in the slice.
+// The resulting set is represented as a map[string]bool, where the keys are the mapped values
+// and the values are always true.
 func ToSet[E any](arr []E, mapper func(E) string) Set {
 	set := make(Set)
 	for _, v := range arr {
@@ -18,6 +22,12 @@ func ToSet[E any](arr []E, mapper func(E) string) Set {
 	}
 	return set
 }
+
+// ToSlice converts a set to a slice using a mapper function to transform each element.
+// The firstInOrder parameter specifies the order in which elements should appear at the beginning of the slice.
+// If any key in firstInOrder is not found in the set, the function will log a fatal error.
+// The mapper function is used to transform each key into the desired element type.
+// The function returns a slice containing the transformed elements.
 func ToSlice[E any](s Set, mapper func(string) E, firstInOrder ...string) []E {
 	slice := make([]E, 0, len(s))
 	for _, k := range firstInOrder {
@@ -133,17 +143,6 @@ func Values[K comparable, V any](m map[K]V) []V {
 		values = append(values, v)
 	}
 	return values
-}
-func Equal[E comparable](a, b []E) bool {
-	if len(a) != len(b) {
-		return false
-	}
-	for i, v := range a {
-		if v != b[i] {
-			return false
-		}
-	}
-	return true
 }
 func CreateUsername(firstName, lastName string) string {
 	return strings.ToLower(firstName) + "_" + strings.ToLower(lastName) + randomNumbersSufix(3)

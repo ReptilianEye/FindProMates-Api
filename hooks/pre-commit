@@ -1,0 +1,5 @@
+#!/usr/bin/sh
+
+echo Running pre-commit hook
+echo PWD is $PWD
+go test -v ./...
