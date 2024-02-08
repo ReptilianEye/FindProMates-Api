@@ -11,6 +11,8 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
+type UserInfo map[string]string
+
 type UserModel struct {
 	C *mongo.Collection
 }
@@ -48,13 +50,13 @@ func (m *UserModel) FindById(id primitive.ObjectID) (*User, error) {
 	}
 	return &user, nil
 }
-func (m *UserModel) FindByUsername(username string) (primitive.ObjectID, error) {
+func (m *UserModel) FindByUserInfo(usernameOrEmail UserInfo) (*User, error) {
 	var user User
-	err := m.C.FindOne(ctx, bson.M{Username: username}).Decode(&user)
+	err := m.C.FindOne(ctx, usernameOrEmail).Decode(&user)
 	if err != nil {
-		return primitive.NilObjectID, err
+		return nil, err
 	}
-	return user.ID, nil
+	return &user, nil
 }
 func (m *UserModel) FindByParameters(params map[string]string) ([]User, error) {
 	query := bson.M{}
@@ -90,9 +92,8 @@ func (m *UserModel) Create(user *User) (*User, error) {
 	return user, nil
 }
 
-func (m *UserModel) Authenticate(username, password string) bool {
-	var user User
-	err := m.C.FindOne(ctx, bson.M{Username: username}).Decode(&user)
+func (m *UserModel) Authenticate(userInfo UserInfo, password string) bool {
+	user, err := m.FindByUserInfo(userInfo)
 	if err != nil {
 		log.Println(err)
 		return false
@@ -103,4 +104,15 @@ func (m *UserModel) Authenticate(username, password string) bool {
 func checkPasswordHash(password, hash string) bool {
 	err := bcrypt.CompareHashAndPassword([]byte(hash), []byte(password))
 	return err == nil
+}
+
+func BuildUserInfo(username, email *string) UserInfo {
+	var usersInfo = make(map[string]string)
+	if username != nil {
+		usersInfo[Username] = *username
+	}
+	if email != nil {
+		usersInfo[Email] = *email
+	}
+	return usersInfo
 }

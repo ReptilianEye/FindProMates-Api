@@ -3,8 +3,9 @@
 package model
 
 type Login struct {
-	Username string `json:"username"`
-	Password string `json:"password"`
+	Email    *string `json:"email,omitempty"`
+	Username *string `json:"username,omitempty"`
+	Password string  `json:"password"`
 }
 
 type Mutation struct {
@@ -13,7 +14,7 @@ type Mutation struct {
 type NewProject struct {
 	Name          string   `json:"name"`
 	Description   *string  `json:"description,omitempty"`
-	Collaborators []string `json:"collaborators"`
+	Collaborators []string `json:"collaborators,omitempty"`
 }
 
 type NewUser struct {

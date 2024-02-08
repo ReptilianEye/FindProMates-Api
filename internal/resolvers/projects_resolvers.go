@@ -4,13 +4,11 @@ import (
 	"example/FindProMates-Api/graph/model"
 	"example/FindProMates-Api/internal/database/projects"
 	"example/FindProMates-Api/internal/pkg/utils"
-	"fmt"
 
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
 func MapToQueryProject(project projects.Project) *model.Project {
-	fmt.Println(project.ID.Hex())
 	return &model.Project{
 		ID:          project.ID.Hex(),
 		Name:        project.Name,
@@ -22,11 +20,21 @@ func MapToQueryProject(project projects.Project) *model.Project {
 	}
 }
 func MapToProject(project model.NewProject, ownerId primitive.ObjectID) projects.Project {
+	var collaborators []string
+	if project.Collaborators != nil {
+		collaborators = project.Collaborators
+	}
+	var description string
+	if project.Description != nil {
+		description = *project.Description
+	} else {
+		description = ""
+	}
 	return projects.Project{
 		Name:          project.Name,
-		Description:   utils.Ternary(project.Description != nil, *project.Description, ""),
+		Description:   description,
 		Owner:         ownerId,
-		Collaborators: handleCollaborators(project.Collaborators, ownerId),
+		Collaborators: handleCollaborators(collaborators, ownerId),
 	}
 }
 
