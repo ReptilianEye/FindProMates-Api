@@ -54,7 +54,7 @@ type ComplexityRoot struct {
 		Login         func(childComplexity int, input model.Login) int
 		RefreshToken  func(childComplexity int, input model.RefreshTokenInput) int
 		UpdateProject func(childComplexity int, id string, input model.UpdatedProject) int
-		UpdateUser    func(childComplexity int, id string, input model.UpdatedUser) int
+		UpdateUser    func(childComplexity int, input model.UpdatedUser) int
 	}
 
 	Project struct {
@@ -91,7 +91,7 @@ type ComplexityRoot struct {
 
 type MutationResolver interface {
 	CreateUser(ctx context.Context, input model.NewUser) (*model.User, error)
-	UpdateUser(ctx context.Context, id string, input model.UpdatedUser) (*model.User, error)
+	UpdateUser(ctx context.Context, input model.UpdatedUser) (*model.User, error)
 	CreateProject(ctx context.Context, input model.NewProject) (*model.Project, error)
 	UpdateProject(ctx context.Context, id string, input model.UpdatedProject) (*model.Project, error)
 	DeleteProject(ctx context.Context, id string) (bool, error)
@@ -206,7 +206,7 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 			return 0, false
 		}
 
-		return e.complexity.Mutation.UpdateUser(childComplexity, args["id"].(string), args["input"].(model.UpdatedUser)), true
+		return e.complexity.Mutation.UpdateUser(childComplexity, args["input"].(model.UpdatedUser)), true
 
 	case "Project.collaborators":
 		if e.complexity.Project.Collaborators == nil {
@@ -583,24 +583,15 @@ func (ec *executionContext) field_Mutation_updateProject_args(ctx context.Contex
 func (ec *executionContext) field_Mutation_updateUser_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
 	var err error
 	args := map[string]interface{}{}
-	var arg0 string
-	if tmp, ok := rawArgs["id"]; ok {
-		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("id"))
-		arg0, err = ec.unmarshalNID2string(ctx, tmp)
-		if err != nil {
-			return nil, err
-		}
-	}
-	args["id"] = arg0
-	var arg1 model.UpdatedUser
+	var arg0 model.UpdatedUser
 	if tmp, ok := rawArgs["input"]; ok {
 		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("input"))
-		arg1, err = ec.unmarshalNUpdatedUser2exampleᚋFindProMatesᚑApiᚋgraphᚋmodelᚐUpdatedUser(ctx, tmp)
+		arg0, err = ec.unmarshalNUpdatedUser2exampleᚋFindProMatesᚑApiᚋgraphᚋmodelᚐUpdatedUser(ctx, tmp)
 		if err != nil {
 			return nil, err
 		}
 	}
-	args["input"] = arg1
+	args["input"] = arg0
 	return args, nil
 }
 
@@ -770,7 +761,7 @@ func (ec *executionContext) _Mutation_updateUser(ctx context.Context, field grap
 	}()
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Mutation().UpdateUser(rctx, fc.Args["id"].(string), fc.Args["input"].(model.UpdatedUser))
+		return ec.resolvers.Mutation().UpdateUser(rctx, fc.Args["input"].(model.UpdatedUser))
 	})
 	if err != nil {
 		ec.Error(ctx, err)
