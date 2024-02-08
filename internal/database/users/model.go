@@ -1,7 +1,6 @@
 package users
 
 import (
-	"example/FindProMates-Api/internal/database/projects"
 	"example/FindProMates-Api/internal/database/util_types"
 
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -17,5 +16,5 @@ type User struct {
 	Email     string             `bson:"email,omitempty"`
 	Password  string             `bson:"password,omitempty"`
 	Skills    []util_types.Skill `bson:"skills,omitempty"`
-	Projects  []projects.Project `bson:"projects,omitempty"`
+	// Projects  []projects.Project `bson:"projects,omitempty"` //collect by owner in projects
 }
