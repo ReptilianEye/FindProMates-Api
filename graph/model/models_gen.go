@@ -32,8 +32,15 @@ type Project struct {
 	Name          string   `json:"name"`
 	Description   string   `json:"description"`
 	Owner         *User    `json:"owner"`
+	Public        bool     `json:"public"`
 	Collaborators []*User  `json:"collaborators"`
 	SkillsNeeded  []string `json:"skills_needed"`
+}
+
+type Projects struct {
+	Public       []*Project `json:"public"`
+	Owned        []*Project `json:"owned,omitempty"`
+	Collaborated []*Project `json:"collaborated,omitempty"`
 }
 
 type Query struct {
@@ -67,10 +74,4 @@ type User struct {
 	Username  string   `json:"username"`
 	Email     string   `json:"email"`
 	Skills    []string `json:"skills"`
-}
-
-type UserProjects struct {
-	Owner        *User      `json:"owner"`
-	Owned        []*Project `json:"owned"`
-	Collaborated []*Project `json:"collaborated"`
 }

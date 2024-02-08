@@ -6,6 +6,7 @@ import (
 	"example/FindProMates-Api/internal/app"
 	"example/FindProMates-Api/internal/auth"
 	"example/FindProMates-Api/internal/database/projects"
+	"example/FindProMates-Api/internal/database/users"
 	"example/FindProMates-Api/internal/database/util_types"
 	"example/FindProMates-Api/internal/pkg/utils"
 	"fmt"
@@ -35,6 +36,21 @@ func GetProjectById(ctx context.Context, id string) (*projects.Project, error) {
 		return nil, fmt.Errorf("access denied")
 	}
 	return project, nil
+}
+
+func ProjectsOwnedByUser(user *users.User) ([]*model.Project, error) {
+	ownedProjects, err := app.App.Projects.FindByOwner(user.ID)
+	if err != nil {
+		return nil, err
+	}
+	return utils.MapTo(ownedProjects, MapToQueryProject), nil
+}
+func ProjectsCollaboratedOnByUser(user *users.User) ([]*model.Project, error) {
+	collaboratedProjects, err := app.App.Projects.FindAllUserIsCollaborator(user.ID)
+	if err != nil {
+		return nil, err
+	}
+	return utils.MapTo(collaboratedProjects, MapToQueryProject), nil
 }
 
 func MapToQueryProject(project projects.Project) *model.Project {
@@ -81,7 +97,16 @@ func UpdateProject(baseProject *projects.Project, project model.UpdatedProject) 
 		baseProject.SkillsNeeded = skills
 	}
 }
-
+func AllPublicProjects() ([]*model.Project, error) {
+	projectsArr, err := app.App.Projects.All()
+	if err != nil {
+		return nil, err
+	}
+	projectsPtrArr := utils.MapTo(projectsArr, func(el projects.Project) *projects.Project { return &el })
+	publicProjectsPtrArr := utils.Filter(projectsPtrArr, func(p *projects.Project) bool { return p.Public })
+	publicProjectsArr := utils.MapTo(publicProjectsPtrArr, func(p *projects.Project) projects.Project { return *p })
+	return utils.MapTo(publicProjectsArr, MapToQueryProject), nil
+}
 func handleCollaborators(collabs []string, owner string, base ...primitive.ObjectID) []primitive.ObjectID {
 	safePrimitive := func(a string) primitive.ObjectID {
 		id, err := primitive.ObjectIDFromHex(a)

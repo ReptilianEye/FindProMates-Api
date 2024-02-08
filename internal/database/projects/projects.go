@@ -24,7 +24,6 @@ var ctx = context.TODO()
 
 func (m *ProjectModel) All() ([]Project, error) {
 	projects := []Project{}
-
 	cursor, err := m.C.Find(ctx, bson.M{})
 	if err != nil {
 		return nil, err

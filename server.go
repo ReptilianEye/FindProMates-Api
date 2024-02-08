@@ -2,6 +2,7 @@ package main
 
 import (
 	"example/FindProMates-Api/graph"
+	"example/FindProMates-Api/internal/app"
 	"example/FindProMates-Api/internal/auth"
 	"example/FindProMates-Api/internal/database"
 	"log"
@@ -19,7 +20,7 @@ const defaultPort = "8080"
 type E any
 
 func main() {
-	cancel := database.InitDB()
+	cancel := app.InitApp()
 	defer cancel()
 	defer database.CloseDB()
 

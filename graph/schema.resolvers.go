@@ -13,8 +13,7 @@ import (
 	"example/FindProMates-Api/internal/pkg/utils"
 	"example/FindProMates-Api/internal/resolvers"
 	"fmt"
-
-	"go.mongodb.org/mongo-driver/bson/primitive"
+	"sync"
 )
 
 // CreateUser is the resolver for the createUser field.
@@ -125,39 +124,65 @@ func (r *queryResolver) Users(ctx context.Context) ([]*model.User, error) {
 }
 
 // Projects is the resolver for the projects field.
-func (r *queryResolver) Projects(ctx context.Context) ([]*model.Project, error) {
-	projectsArr, err := app.App.Projects.All()
-	if err != nil {
-		return nil, err
+func (r *queryResolver) Projects(ctx context.Context) (*model.Projects, error) {
+	needToWaitFor := 1 // AllPublicProjects, ProjectsOwnedByUser, ProjectsCollaboratedOnByUser
+	errors := make(chan error, needToWaitFor)
+	publicProjectsChan := make(chan []*model.Project)
+	ownedProjectsChan := make(chan []*model.Project)
+	collaboratedProjectsChan := make(chan []*model.Project)
+	go func() {
+		fmt.Println("Getting public projects")
+		publicProjects, err := resolvers.AllPublicProjects()
+		errors <- err
+		if err == nil {
+			publicProjectsChan <- publicProjects
+		}
+	}()
+	go func() {
+		wg := sync.WaitGroup{}
+		wg.Add(2)
+		user, err := resolvers.GetUserFromContex(ctx)
+		if err != nil {
+			ownedProjectsChan <- nil
+			collaboratedProjectsChan <- nil
+			return
+		}
+		go func() {
+			fmt.Println("Getting owned projects")
+			userOwnedProjects, err := resolvers.ProjectsOwnedByUser(user)
+			errors <- err
+			if err == nil {
+				ownedProjectsChan <- userOwnedProjects
+			}
+			wg.Done()
+		}()
+		go func() {
+			fmt.Println("Getting collaborated projects")
+			userCollaboratedProjects, err := resolvers.ProjectsCollaboratedOnByUser(user)
+			errors <- err
+			if err == nil {
+				collaboratedProjectsChan <- userCollaboratedProjects
+			}
+			wg.Done()
+		}()
+		wg.Wait()
+	}()
+	for ; needToWaitFor > 0; needToWaitFor-- {
+		err := <-errors
+		if err != nil {
+			return nil, err
+		}
 	}
-	return utils.MapTo(projectsArr, resolvers.MapToQueryProject), nil
-}
-
-// ProjectsByUser is the resolver for the projectsByUser field.
-func (r *queryResolver) ProjectsByUser(ctx context.Context, id string) (*model.UserProjects, error) {
-	idObj, err := primitive.ObjectIDFromHex(id)
-	if err != nil {
-		return nil, err
-	}
-
-	owner, err := app.App.Users.FindById(idObj)
-	if err != nil {
-		return nil, err
-	}
-
-	projects, err := app.App.Projects.FindByOwner(idObj)
-	if err != nil {
-		return nil, err
-	}
-
-	collaboratedProjects, err := app.App.Projects.FindAllUserIsCollaborator(idObj)
-	if err != nil {
-		return nil, err
-	}
-	return &model.UserProjects{
-		Owner:        resolvers.MapToQueryUser(*owner),
-		Owned:        utils.MapTo(projects, resolvers.MapToQueryProject),
-		Collaborated: utils.MapTo(collaboratedProjects, resolvers.MapToQueryProject),
+	publicProjects := <-publicProjectsChan
+	// return &model.Projects{
+	// 	Public:       <-publicProjectsChan,
+	// 	Owned:        <-ownedProjectsChan,
+	// 	Collaborated: <-collaboratedProjectsChan,
+	// }, nil
+	return &model.Projects{
+		Public:       publicProjects,
+		Owned:        nil,
+		Collaborated: nil,
 	}, nil
 }
 

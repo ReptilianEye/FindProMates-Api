@@ -61,7 +61,6 @@ func Authenticate(username, email *string, password string) (*users.User, error)
 	}
 	return user, nil
 }
-
 func GetUserFromContex(ctx context.Context) (*users.User, error) {
 	userId := auth.ForContext(ctx)
 	if userId == "" {

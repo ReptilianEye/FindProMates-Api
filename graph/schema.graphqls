@@ -16,14 +16,15 @@ type Project {
   name: String!
   description: String!
   owner: User!
+  public: Boolean!
   collaborators: [User!]!
   skills_needed: [String!]!
 }
-
-type UserProjects {
-  owner: User!
-  owned: [Project!]!
-  collaborated: [Project!]!
+# nulls when not logged in
+type Projects {
+  public: [Project!]!
+  owned: [Project!]
+  collaborated: [Project!]
 }
 
 input NewUser {
@@ -70,8 +71,7 @@ input Login {
 
 type Query {
   users: [User!]!
-  projects: [Project!]!
-  projectsByUser(id: ID!): UserProjects!
+  projects: Projects!
   project(id: ID!): Project
 }
 

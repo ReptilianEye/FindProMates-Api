@@ -6,6 +6,8 @@ import (
 	"example/FindProMates-Api/internal/database/projects"
 	"example/FindProMates-Api/internal/database/users"
 	"example/FindProMates-Api/internal/pkg/jwt"
+
+	"github.com/joho/godotenv"
 )
 
 var App *Application
@@ -17,6 +19,7 @@ type Application struct {
 
 func InitApp() context.CancelFunc {
 	jwtDone := make(chan bool)
+	godotenv.Load()
 	go func() {
 		jwt.InitJWT()
 		jwtDone <- true

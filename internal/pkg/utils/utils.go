@@ -3,6 +3,7 @@ package utils
 import (
 	"log"
 	"math/rand"
+	"slices"
 	"strconv"
 	"strings"
 
@@ -100,6 +101,15 @@ func MapTo[E, V any](arr []E, mapper func(E) V) []V {
 		mapped[i] = mapper(v)
 	}
 	return mapped
+}
+func Filter[E any](arr []E, predicate func(E) bool) []E {
+	filtered := make([]E, 0, len(arr))
+	for _, v := range arr {
+		if predicate(v) {
+			filtered = append(filtered, v)
+		}
+	}
+	return slices.Clip(filtered)
 }
 func Any[E any](arr []E, predicate func(E) bool) bool {
 	for _, v := range arr {
