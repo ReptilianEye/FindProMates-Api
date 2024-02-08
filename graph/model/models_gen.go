@@ -2,6 +2,26 @@
 
 package model
 
+import (
+	"time"
+)
+
+type AllProjects struct {
+	Public       []*Project `json:"public"`
+	Owned        []*Project `json:"owned,omitempty"`
+	Collaborated []*Project `json:"collaborated,omitempty"`
+}
+
+type CollabRequest struct {
+	ID        string   `json:"id"`
+	Project   *Project `json:"project"`
+	Requester *User    `json:"requester"`
+	Message   string   `json:"message"`
+	Responder *User    `json:"responder,omitempty"`
+	Feedback  *string  `json:"feedback,omitempty"`
+	Status    string   `json:"status"`
+}
+
 type Login struct {
 	Email    *string `json:"email,omitempty"`
 	Username *string `json:"username,omitempty"`
@@ -27,6 +47,14 @@ type NewUser struct {
 	Skills    []string `json:"skills"`
 }
 
+type Note struct {
+	ID        string    `json:"id"`
+	Project   *Project  `json:"project"`
+	AddedBy   *User     `json:"addedBy"`
+	CreatedAt time.Time `json:"createdAt"`
+	Note      string    `json:"note"`
+}
+
 type Project struct {
 	ID            string   `json:"id"`
 	Name          string   `json:"name"`
@@ -37,17 +65,17 @@ type Project struct {
 	SkillsNeeded  []string `json:"skills_needed"`
 }
 
-type Projects struct {
-	Public       []*Project `json:"public"`
-	Owned        []*Project `json:"owned,omitempty"`
-	Collaborated []*Project `json:"collaborated,omitempty"`
-}
-
 type Query struct {
 }
 
-type RefreshTokenInput struct {
-	Token string `json:"token"`
+type Task struct {
+	ID               string     `json:"id"`
+	Project          *Project   `json:"project"`
+	AddedBy          *User      `json:"addedBy"`
+	Task             string     `json:"task"`
+	Deadline         *time.Time `json:"deadline,omitempty"`
+	CreatedAt        time.Time  `json:"createdAt"`
+	CompletionStatus string     `json:"completionStatus"`
 }
 
 type UpdatedProject struct {

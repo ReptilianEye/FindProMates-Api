@@ -13,5 +13,5 @@ type Note struct {
 	ProjectID primitive.ObjectID `bson:"project_id,omitempty"`
 	AddedBy   primitive.ObjectID `bson:"added_by,omitempty"`
 	Note      string             `bson:"note,omitempty"`
-	AddedDate time.Time          `bson:"added_date,omitempty"`
+	CreatedAt time.Time          `bson:"created_at,omitempty"`
 }

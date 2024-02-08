@@ -2,6 +2,8 @@
 #
 # https://gqlgen.com/getting-started/
 
+scalar Time
+
 type User {
   id: ID!
   firstName: String!
@@ -20,8 +22,38 @@ type Project {
   collaborators: [User!]!
   skills_needed: [String!]!
 }
+
+type Note {
+  id: ID!
+  project: Project!
+  addedBy: User!
+  createdAt: Time!
+  note: String!
+}
+
+type Task {
+  id: ID!
+  project: Project!
+  addedBy: User!
+  task: String!
+  deadline: Time
+  createdAt: Time!
+  completionStatus: String!
+}
+type CollabRequest {
+  id: ID!
+  project: Project!
+  requester: User!
+  message: String!
+  #after request is considered
+  responder: User
+  feedback: String
+
+  status: String!
+}
+
 # nulls when not logged in
-type Projects {
+type AllProjects {
   public: [Project!]!
   owned: [Project!]
   collaborated: [Project!]
@@ -59,10 +91,6 @@ input UpdatedProject {
   skills_needed: [String!]
 }
 
-input RefreshTokenInput {
-  token: String!
-}
-
 input Login {
   email: String
   username: String
@@ -71,8 +99,19 @@ input Login {
 
 type Query {
   users: [User!]!
-  projects: Projects!
-  project(id: ID!): Project
+  me: User!
+  user(id: ID!): User
+
+  projects: AllProjects!
+  project(id: ID!): Project!
+  userProjectsById(id: ID!): [Project!]!
+
+  notesByProject(id: ID!): [Note!]!
+  note(id: ID!): Note!
+
+  tasks: [Task!]!
+  taskByProject(id: ID!): [Task!]!
+  task(id: ID!): Task!
 }
 
 type Mutation {
@@ -82,5 +121,5 @@ type Mutation {
   updateProject(id: ID!, input: UpdatedProject!): Project!
   deleteProject(id: ID!): Boolean!
   login(input: Login!): String!
-  refreshToken(input: RefreshTokenInput!): String!
+  refreshToken(input: String!): String!
 }

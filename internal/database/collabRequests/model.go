@@ -12,7 +12,8 @@ type CollabRequest struct {
 	ID          primitive.ObjectID       `bson:"_id,omitempty"`
 	ProjectID   primitive.ObjectID       `bson:"project_id,omitempty"`
 	RequesterID primitive.ObjectID       `bson:"requester_id,omitempty"`
-	Message     string                   `bson:"message,omitempty"`
-	Feedback    string                   `bson:"feedback,omitempty"`
+	ResponderID primitive.ObjectID       `bson:"responder_id,omitempty"`
+	Message     string                   `bson:"message"`
+	Feedback    string                   `bson:"feedback"`
 	Status      util_types.RequestStatus `bson:"status,omitempty"`
 }

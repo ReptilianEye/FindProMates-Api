@@ -102,8 +102,8 @@ func (r *mutationResolver) Login(ctx context.Context, input model.Login) (string
 }
 
 // RefreshToken is the resolver for the refreshToken field.
-func (r *mutationResolver) RefreshToken(ctx context.Context, input model.RefreshTokenInput) (string, error) {
-	userId, err := jwt.ParseToken(input.Token)
+func (r *mutationResolver) RefreshToken(ctx context.Context, input string) (string, error) {
+	userId, err := jwt.ParseToken(input)
 	if err != nil {
 		return "", err
 	}
@@ -123,8 +123,18 @@ func (r *queryResolver) Users(ctx context.Context) ([]*model.User, error) {
 	return utils.MapTo(usersArr, resolvers.MapToQueryUser), nil
 }
 
+// Me is the resolver for the me field.
+func (r *queryResolver) Me(ctx context.Context) (*model.User, error) {
+	panic(fmt.Errorf("not implemented: Me - me"))
+}
+
+// User is the resolver for the user field.
+func (r *queryResolver) User(ctx context.Context, id string) (*model.User, error) {
+	panic(fmt.Errorf("not implemented: User - user"))
+}
+
 // Projects is the resolver for the projects field.
-func (r *queryResolver) Projects(ctx context.Context) (*model.Projects, error) {
+func (r *queryResolver) Projects(ctx context.Context) (*model.AllProjects, error) {
 	needToWaitFor := 1 // AllPublicProjects, ProjectsOwnedByUser, ProjectsCollaboratedOnByUser
 	errors := make(chan error, needToWaitFor)
 	publicProjectsChan := make(chan []*model.Project)
@@ -179,7 +189,7 @@ func (r *queryResolver) Projects(ctx context.Context) (*model.Projects, error) {
 	// 	Owned:        <-ownedProjectsChan,
 	// 	Collaborated: <-collaboratedProjectsChan,
 	// }, nil
-	return &model.Projects{
+	return &model.AllProjects{
 		Public:       publicProjects,
 		Owned:        nil,
 		Collaborated: nil,
@@ -193,6 +203,36 @@ func (r *queryResolver) Project(ctx context.Context, id string) (*model.Project,
 		return nil, err
 	}
 	return resolvers.MapToQueryProject(*project), nil
+}
+
+// UserProjectsByID is the resolver for the userProjectsById field.
+func (r *queryResolver) UserProjectsByID(ctx context.Context, id string) ([]*model.Project, error) {
+	panic(fmt.Errorf("not implemented: UserProjectsByID - userProjectsById"))
+}
+
+// NotesByProject is the resolver for the notesByProject field.
+func (r *queryResolver) NotesByProject(ctx context.Context, id string) ([]*model.Note, error) {
+	panic(fmt.Errorf("not implemented: NotesByProject - notesByProject"))
+}
+
+// Note is the resolver for the note field.
+func (r *queryResolver) Note(ctx context.Context, id string) (*model.Note, error) {
+	panic(fmt.Errorf("not implemented: Note - note"))
+}
+
+// Tasks is the resolver for the tasks field.
+func (r *queryResolver) Tasks(ctx context.Context) ([]*model.Task, error) {
+	panic(fmt.Errorf("not implemented: Tasks - tasks"))
+}
+
+// TaskByProject is the resolver for the taskByProject field.
+func (r *queryResolver) TaskByProject(ctx context.Context, id string) ([]*model.Task, error) {
+	panic(fmt.Errorf("not implemented: TaskByProject - taskByProject"))
+}
+
+// Task is the resolver for the task field.
+func (r *queryResolver) Task(ctx context.Context, id string) (*model.Task, error) {
+	panic(fmt.Errorf("not implemented: Task - task"))
 }
 
 // Mutation returns MutationResolver implementation.

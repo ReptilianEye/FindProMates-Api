@@ -1,16 +1,16 @@
 package resolvers
 
-import (
-	"example/FindProMates-Api/graph/model"
-	"example/FindProMates-Api/internal/database/projects"
-	"example/FindProMates-Api/internal/database/util_types"
-	"example/FindProMates-Api/internal/pkg/utils"
-	"testing"
+// import (
+// 	"example/FindProMates-Api/graph/model"
+// 	"example/FindProMates-Api/internal/database/projects"
+// 	"example/FindProMates-Api/internal/database/util_types"
+// 	"example/FindProMates-Api/internal/pkg/utils"
+// 	"testing"
 
-	"go.mongodb.org/mongo-driver/bson/primitive"
-)
+// 	"go.mongodb.org/mongo-driver/bson/primitive"
+// )
 
-// does not work because cannot connect to database
+// // does not work because cannot connect to database
 // func TestMapToQueryProject(t *testing.T) {
 // 	id := primitive.NewObjectID()
 // 	name := "Test Project"
