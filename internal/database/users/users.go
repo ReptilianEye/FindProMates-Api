@@ -92,6 +92,21 @@ func (m *UserModel) Create(user *User) (*User, error) {
 	return user, nil
 }
 
+func (m *UserModel) Update(user *User, changingPassword bool) (*User, error) {
+	if changingPassword {
+		hashedPassword, err := utils.HashPassword(user.Password)
+		if err != nil {
+			return nil, err
+		}
+		user.Password = hashedPassword
+	}
+	_, err := m.C.ReplaceOne(ctx, bson.M{Id: user.ID}, user)
+	if err != nil {
+		return nil, err
+	}
+	return user, nil
+}
+
 func (m *UserModel) Authenticate(userInfo UserInfo, password string) bool {
 	user, err := m.FindByUserInfo(userInfo)
 	if err != nil {

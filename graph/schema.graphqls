@@ -38,7 +38,8 @@ input UpdatedUser {
   firstName: String
   lastName: String
   username: String
-  password: String
+  old_password: String
+  new_password: String
   email: String
   skills: [String!]
 }
@@ -76,7 +77,7 @@ type Query {
 
 type Mutation {
   createUser(input: NewUser!): User!
-  updateUser(id: ID!, input: UpdatedUser!): User!
+  updateUser(input: UpdatedUser!): User!
   createProject(input: NewProject!): Project!
   updateProject(id: ID!, input: UpdatedProject!): Project!
   deleteProject(id: ID!): Boolean!

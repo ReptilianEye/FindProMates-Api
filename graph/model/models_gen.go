@@ -51,12 +51,13 @@ type UpdatedProject struct {
 }
 
 type UpdatedUser struct {
-	FirstName *string  `json:"firstName,omitempty"`
-	LastName  *string  `json:"lastName,omitempty"`
-	Username  *string  `json:"username,omitempty"`
-	Password  *string  `json:"password,omitempty"`
-	Email     *string  `json:"email,omitempty"`
-	Skills    []string `json:"skills,omitempty"`
+	FirstName   *string  `json:"firstName,omitempty"`
+	LastName    *string  `json:"lastName,omitempty"`
+	Username    *string  `json:"username,omitempty"`
+	OldPassword *string  `json:"old_password,omitempty"`
+	NewPassword *string  `json:"new_password,omitempty"`
+	Email       *string  `json:"email,omitempty"`
+	Skills      []string `json:"skills,omitempty"`
 }
 
 type User struct {

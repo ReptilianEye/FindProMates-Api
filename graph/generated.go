@@ -4238,7 +4238,7 @@ func (ec *executionContext) unmarshalInputUpdatedUser(ctx context.Context, obj i
 		asMap[k] = v
 	}
 
-	fieldsInOrder := [...]string{"firstName", "lastName", "username", "password", "email", "skills"}
+	fieldsInOrder := [...]string{"firstName", "lastName", "username", "old_password", "new_password", "email", "skills"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
@@ -4266,13 +4266,20 @@ func (ec *executionContext) unmarshalInputUpdatedUser(ctx context.Context, obj i
 				return it, err
 			}
 			it.Username = data
-		case "password":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("password"))
+		case "old_password":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("old_password"))
 			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
 			if err != nil {
 				return it, err
 			}
-			it.Password = data
+			it.OldPassword = data
+		case "new_password":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("new_password"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.NewPassword = data
 		case "email":
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("email"))
 			data, err := ec.unmarshalOString2ᚖstring(ctx, v)

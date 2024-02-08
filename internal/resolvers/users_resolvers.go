@@ -1,8 +1,10 @@
 package resolvers
 
 import (
+	"context"
 	"example/FindProMates-Api/graph/model"
 	"example/FindProMates-Api/internal/app"
+	"example/FindProMates-Api/internal/auth"
 	"example/FindProMates-Api/internal/database/projects"
 	"example/FindProMates-Api/internal/database/users"
 	"example/FindProMates-Api/internal/database/util_types"
@@ -13,13 +15,6 @@ import (
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
-func userFromId(userId primitive.ObjectID) *users.User {
-	user, err := app.App.Users.FindById(userId)
-	if err != nil {
-		log.Fatal(err)
-	}
-	return user
-}
 func MapToQueryUser(user users.User) *model.User {
 	return &model.User{
 		ID:        user.ID.Hex(),
@@ -33,21 +28,10 @@ func MapToQueryUser(user users.User) *model.User {
 	}
 }
 func MapToUser(user model.NewUser) users.User {
-	fmt.Println(user)
-	var username string
-	if user.Username != nil {
-		username = *user.Username
-	} else {
-		username = utils.CreateUsername(user.FirstName, user.LastName)
-	}
-	//alternative
-	// new_username := utils.CreateUsername(user.FirstName, user.LastName)
-	// username := *utils.Ternary(user.Username != nil, user.Username, &new_username)
-	fmt.Println(username)
 	return users.User{
 		FirstName: user.FirstName,
 		LastName:  user.LastName,
-		Username:  username,
+		Username:  utils.Elivis(user.Username, utils.CreateUsername(user.FirstName, user.LastName)),
 		Email:     user.Email,
 		Password:  user.Password,
 		Skills: utils.MapTo(user.Skills, func(skill string) util_types.Skill {
@@ -55,4 +39,51 @@ func MapToUser(user model.NewUser) users.User {
 		}),
 		Projects: make([]projects.Project, 0),
 	}
+}
+func userFromId(userId primitive.ObjectID) *users.User {
+	user, err := app.App.Users.FindById(userId)
+	if err != nil {
+		log.Fatal(err)
+	}
+	return user
+}
+func Authenticate(username, email *string, password string) (*users.User, error) {
+	userAuthInfo := users.BuildUserInfo(username, email)
+	if len(userAuthInfo) == 0 {
+		return nil, fmt.Errorf("username or email is required")
+	}
+	if !app.App.Users.Authenticate(userAuthInfo, password) {
+		return nil, fmt.Errorf("username or password is incorrect")
+	}
+	user, err := app.App.Users.FindByUserInfo(userAuthInfo)
+	if err != nil {
+		return nil, err
+	}
+	return user, nil
+}
+
+func GetUserFromContex(ctx context.Context) (*users.User, error) {
+	userId := auth.ForContext(ctx)
+	if userId == "" {
+		return nil, fmt.Errorf("access denied")
+	}
+	userIdObj, err := primitive.ObjectIDFromHex(userId)
+	if err != nil {
+		return nil, err
+	}
+	user, err := app.App.Users.FindById(userIdObj)
+	if err != nil {
+		return nil, err
+	}
+	return user, nil
+}
+func UpdateUser(base *users.User, user model.UpdatedUser) {
+	base.FirstName = utils.Elivis(user.FirstName, base.FirstName)
+	base.LastName = utils.Elivis(user.LastName, base.LastName)
+	base.Username = utils.Elivis(user.Username, base.Username)
+	base.Email = utils.Elivis(user.Email, base.Email)
+	base.Password = utils.Elivis(user.NewPassword, base.Password)
+	base.Skills = utils.MapTo(user.Skills, func(skill string) util_types.Skill {
+		return util_types.Skill(skill)
+	})
 }

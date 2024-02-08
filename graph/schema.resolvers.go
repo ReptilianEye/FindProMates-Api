@@ -8,7 +8,6 @@ import (
 	"context"
 	"example/FindProMates-Api/graph/model"
 	"example/FindProMates-Api/internal/app"
-	"example/FindProMates-Api/internal/auth"
 	"example/FindProMates-Api/internal/database/users"
 	"example/FindProMates-Api/internal/pkg/jwt"
 	"example/FindProMates-Api/internal/pkg/utils"
@@ -29,21 +28,33 @@ func (r *mutationResolver) CreateUser(ctx context.Context, input model.NewUser) 
 }
 
 // UpdateUser is the resolver for the updateUser field.
-func (r *mutationResolver) UpdateUser(ctx context.Context, id string, input model.UpdatedUser) (*model.User, error) {
-	panic(fmt.Errorf("not implemented: UpdateUser - updateUser"))
+func (r *mutationResolver) UpdateUser(ctx context.Context, input model.UpdatedUser) (*model.User, error) {
+	user, err := resolvers.GetUserFromContex(ctx)
+	if err != nil {
+		return nil, err
+	}
+	changingPassword := false
+	if input.OldPassword != nil {
+		if !app.App.Users.Authenticate(users.BuildUserInfo(&user.Username, nil), *input.OldPassword) {
+			return nil, fmt.Errorf("old password is incorrect")
+		}
+		changingPassword = true
+	}
+	resolvers.UpdateUser(user, input)
+	_, err = app.App.Users.Update(user, changingPassword)
+	if err != nil {
+		return nil, err
+	}
+	return resolvers.MapToQueryUser(*user), nil
 }
 
 // CreateProject is the resolver for the createProject field.
 func (r *mutationResolver) CreateProject(ctx context.Context, input model.NewProject) (*model.Project, error) {
-	userId := auth.ForContext(ctx)
-	if userId == "" {
-		return nil, fmt.Errorf("access denied")
-	}
-	ownerId, err := primitive.ObjectIDFromHex(userId)
+	owner, err := resolvers.GetUserFromContex(ctx)
 	if err != nil {
 		return nil, err
 	}
-	project := resolvers.MapToProjectFromNew(input, ownerId)
+	project := resolvers.MapToProjectFromNew(input, owner.ID)
 	_, err = app.App.Projects.Create(&project)
 	if err != nil {
 		return nil, err
@@ -57,7 +68,6 @@ func (r *mutationResolver) UpdateProject(ctx context.Context, id string, input m
 	if err != nil {
 		return nil, err
 	}
-	fmt.Println(*project)
 	resolvers.UpdateProject(project, input)
 	_, err = app.App.Projects.Update(project.ID, project)
 	if err != nil {
@@ -81,15 +91,7 @@ func (r *mutationResolver) DeleteProject(ctx context.Context, id string) (bool, 
 
 // Login is the resolver for the login field.
 func (r *mutationResolver) Login(ctx context.Context, input model.Login) (string, error) {
-	userAuthInfo := users.BuildUserInfo(input.Username, input.Email)
-	if len(userAuthInfo) == 0 {
-		return "", fmt.Errorf("username or email is required")
-	}
-	password := input.Password
-	if !app.App.Users.Authenticate(userAuthInfo, password) {
-		return "", fmt.Errorf("username or password is incorrect")
-	}
-	user, err := app.App.Users.FindByUserInfo(userAuthInfo)
+	user, err := resolvers.Authenticate(input.Username, input.Email, input.Password)
 	if err != nil {
 		return "", err
 	}
@@ -161,11 +163,7 @@ func (r *queryResolver) ProjectsByUser(ctx context.Context, id string) (*model.U
 
 // Project is the resolver for the project field.
 func (r *queryResolver) Project(ctx context.Context, id string) (*model.Project, error) {
-	idObj, err := primitive.ObjectIDFromHex(id)
-	if err != nil {
-		return nil, err
-	}
-	project, err := app.App.Projects.FindById(idObj)
+	project, err := resolvers.GetProjectById(ctx, id)
 	if err != nil {
 		return nil, err
 	}
