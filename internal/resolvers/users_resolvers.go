@@ -5,7 +5,6 @@ import (
 	"example/FindProMates-Api/graph/model"
 	"example/FindProMates-Api/internal/app"
 	"example/FindProMates-Api/internal/auth"
-	"example/FindProMates-Api/internal/database/projects"
 	"example/FindProMates-Api/internal/database/users"
 	"example/FindProMates-Api/internal/database/util_types"
 	"example/FindProMates-Api/internal/pkg/utils"
@@ -37,7 +36,7 @@ func MapToUser(user model.NewUser) users.User {
 		Skills: utils.MapTo(user.Skills, func(skill string) util_types.Skill {
 			return util_types.Skill(skill)
 		}),
-		Projects: make([]projects.Project, 0),
+		// Projects: make([]projects.Project, 0),
 	}
 }
 func userFromId(userId primitive.ObjectID) *users.User {

@@ -16,4 +16,5 @@ type Project struct {
 	Public        bool                 `bson:"public,omitempty"`
 	Collaborators []primitive.ObjectID `bson:"collaborators,omitempty"`
 	SkillsNeeded  []util_types.Skill   `bson:"skills_needed,omitempty"`
+	// RequestsToCollab []primitive.ObjectID `bson:"requests_to_collab,omitempty"` //joined from ColabRequests
 }
