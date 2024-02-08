@@ -80,10 +80,10 @@ func (m *ProjectModel) Create(project *Project) (*Project, error) {
 	return project, nil
 }
 
-func (m *ProjectModel) Update(id string, project Project) (*mongo.UpdateResult, error) {
-	return m.C.ReplaceOne(context.TODO(), bson.M{"_id": id}, project)
+func (m *ProjectModel) Update(id primitive.ObjectID, project *Project) (*mongo.UpdateResult, error) {
+	return m.C.ReplaceOne(context.TODO(), bson.M{Id: id}, project)
 }
 
-func (m *ProjectModel) Delete(id string) (*mongo.DeleteResult, error) {
-	return m.C.DeleteOne(context.TODO(), bson.M{"_id": id})
+func (m *ProjectModel) Delete(id primitive.ObjectID) (*mongo.DeleteResult, error) {
+	return m.C.DeleteOne(context.TODO(), bson.M{Id: id})
 }

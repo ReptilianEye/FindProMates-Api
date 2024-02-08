@@ -28,6 +28,11 @@ func (r *mutationResolver) CreateUser(ctx context.Context, input model.NewUser) 
 	return resolvers.MapToQueryUser(user), nil
 }
 
+// UpdateUser is the resolver for the updateUser field.
+func (r *mutationResolver) UpdateUser(ctx context.Context, id string, input model.UpdatedUser) (*model.User, error) {
+	panic(fmt.Errorf("not implemented: UpdateUser - updateUser"))
+}
+
 // CreateProject is the resolver for the createProject field.
 func (r *mutationResolver) CreateProject(ctx context.Context, input model.NewProject) (*model.Project, error) {
 	userId := auth.ForContext(ctx)
@@ -38,7 +43,7 @@ func (r *mutationResolver) CreateProject(ctx context.Context, input model.NewPro
 	if err != nil {
 		return nil, err
 	}
-	project := resolvers.MapToProject(input, ownerId)
+	project := resolvers.MapToProjectFromNew(input, ownerId)
 	_, err = app.App.Projects.Create(&project)
 	if err != nil {
 		return nil, err
@@ -47,8 +52,31 @@ func (r *mutationResolver) CreateProject(ctx context.Context, input model.NewPro
 }
 
 // UpdateProject is the resolver for the updateProject field.
-func (r *mutationResolver) UpdateProject(ctx context.Context, id string, input model.NewProject) (*model.Project, error) {
-	panic(fmt.Errorf("not implemented: UpdateProject - updateProject"))
+func (r *mutationResolver) UpdateProject(ctx context.Context, id string, input model.UpdatedProject) (*model.Project, error) {
+	project, err := resolvers.GetProjectById(ctx, id)
+	if err != nil {
+		return nil, err
+	}
+	fmt.Println(*project)
+	resolvers.UpdateProject(project, input)
+	_, err = app.App.Projects.Update(project.ID, project)
+	if err != nil {
+		return nil, err
+	}
+	return resolvers.MapToQueryProject(*project), nil
+}
+
+// DeleteProject is the resolver for the deleteProject field.
+func (r *mutationResolver) DeleteProject(ctx context.Context, id string) (bool, error) {
+	project, err := resolvers.GetProjectById(ctx, id)
+	if err != nil {
+		return false, err
+	}
+	_, err = app.App.Projects.Delete(project.ID)
+	if err != nil {
+		return false, err
+	}
+	return true, nil
 }
 
 // Login is the resolver for the login field.
@@ -74,7 +102,15 @@ func (r *mutationResolver) Login(ctx context.Context, input model.Login) (string
 
 // RefreshToken is the resolver for the refreshToken field.
 func (r *mutationResolver) RefreshToken(ctx context.Context, input model.RefreshTokenInput) (string, error) {
-	panic(fmt.Errorf("not implemented: RefreshToken - refreshToken"))
+	userId, err := jwt.ParseToken(input.Token)
+	if err != nil {
+		return "", err
+	}
+	token, err := jwt.GenerateToken(userId)
+	if err != nil {
+		return "", err
+	}
+	return token, nil
 }
 
 // Users is the resolver for the users field.

@@ -15,6 +15,7 @@ type NewProject struct {
 	Name          string   `json:"name"`
 	Description   *string  `json:"description,omitempty"`
 	Collaborators []string `json:"collaborators,omitempty"`
+	SkillsNeeded  []string `json:"skills_needed"`
 }
 
 type NewUser struct {
@@ -27,11 +28,12 @@ type NewUser struct {
 }
 
 type Project struct {
-	ID            string  `json:"id"`
-	Name          string  `json:"name"`
-	Description   string  `json:"description"`
-	Owner         *User   `json:"owner"`
-	Collaborators []*User `json:"collaborators"`
+	ID            string   `json:"id"`
+	Name          string   `json:"name"`
+	Description   string   `json:"description"`
+	Owner         *User    `json:"owner"`
+	Collaborators []*User  `json:"collaborators"`
+	SkillsNeeded  []string `json:"skills_needed"`
 }
 
 type Query struct {
@@ -41,10 +43,20 @@ type RefreshTokenInput struct {
 	Token string `json:"token"`
 }
 
-type UpdateProject struct {
+type UpdatedProject struct {
 	Name          *string  `json:"name,omitempty"`
 	Description   *string  `json:"description,omitempty"`
 	Collaborators []string `json:"collaborators,omitempty"`
+	SkillsNeeded  []string `json:"skills_needed,omitempty"`
+}
+
+type UpdatedUser struct {
+	FirstName *string  `json:"firstName,omitempty"`
+	LastName  *string  `json:"lastName,omitempty"`
+	Username  *string  `json:"username,omitempty"`
+	Password  *string  `json:"password,omitempty"`
+	Email     *string  `json:"email,omitempty"`
+	Skills    []string `json:"skills,omitempty"`
 }
 
 type User struct {

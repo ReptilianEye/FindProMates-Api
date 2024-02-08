@@ -1,6 +1,10 @@
 package projects
 
-import "go.mongodb.org/mongo-driver/bson/primitive"
+import (
+	"example/FindProMates-Api/internal/database/util_types"
+
+	"go.mongodb.org/mongo-driver/bson/primitive"
+)
 
 const ProjectCollection string = "projects"
 
@@ -10,4 +14,5 @@ type Project struct {
 	Name          string               `bson:"name,omitempty"`
 	Description   string               `bson:"description,omitempty"`
 	Collaborators []primitive.ObjectID `bson:"collaborators,omitempty"`
+	SkillsNeeded  []util_types.Skill   `bson:"skills_needed,omitempty"`
 }

@@ -17,6 +17,7 @@ type Project {
   description: String!
   owner: User!
   collaborators: [User!]!
+  skills_needed: [String!]!
 }
 
 type UserProjects {
@@ -33,17 +34,27 @@ input NewUser {
   email: String!
   skills: [String!]!
 }
+input UpdatedUser {
+  firstName: String
+  lastName: String
+  username: String
+  password: String
+  email: String
+  skills: [String!]
+}
 
 input NewProject {
   name: String!
   description: String
   collaborators: [ID!]
+  skills_needed: [String!]!
 }
 
-input UpdateProject {
+input UpdatedProject {
   name: String
   description: String
   collaborators: [ID!]
+  skills_needed: [String!]
 }
 
 input RefreshTokenInput {
@@ -65,8 +76,10 @@ type Query {
 
 type Mutation {
   createUser(input: NewUser!): User!
+  updateUser(id: ID!, input: UpdatedUser!): User!
   createProject(input: NewProject!): Project!
-  updateProject(id: ID!, input: NewProject!): Project!
+  updateProject(id: ID!, input: UpdatedProject!): Project!
+  deleteProject(id: ID!): Boolean!
   login(input: Login!): String!
   refreshToken(input: RefreshTokenInput!): String!
 }
