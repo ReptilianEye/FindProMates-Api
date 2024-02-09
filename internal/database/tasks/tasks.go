@@ -29,7 +29,7 @@ var ctx = context.TODO()
 func (m *TaskModel) AllAssignedToUser(userId primitive.ObjectID) ([]*Task, error) {
 	tasks := []*Task{}
 	cursor, err := m.C.Find(ctx, bson.D{
-		{AssignedTo, userId},
+		{Key: AssignedTo, Value: userId},
 	})
 	if err != nil {
 		return nil, err

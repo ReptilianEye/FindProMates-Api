@@ -57,7 +57,7 @@ func (m *ProjectModel) FindByOwner(owner primitive.ObjectID) ([]*Project, error)
 func (m *ProjectModel) FindAllUserIsCollaborator(user primitive.ObjectID) ([]*Project, error) {
 	var projects []*Project
 	cursor, err := m.C.Find(ctx, bson.D{
-		{Collaborators, user}, //https://www.mongodb.com/docs/manual/tutorial/query-arrays/
+		{Key: Collaborators, Value: user}, //https://www.mongodb.com/docs/manual/tutorial/query-arrays/
 	})
 	if err != nil {
 		return nil, err
