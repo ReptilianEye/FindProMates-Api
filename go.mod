@@ -1,6 +1,6 @@
 module example/FindProMates-Api
 
-go 1.21.6
+go 1.22
 
 require (
 	github.com/99designs/gqlgen v0.17.44-0.20240130005934-e174d59ed2da
