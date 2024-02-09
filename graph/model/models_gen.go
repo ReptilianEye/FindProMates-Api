@@ -73,9 +73,11 @@ type Task struct {
 	ID               string     `json:"id"`
 	Project          *Project   `json:"project"`
 	AddedBy          *User      `json:"addedBy"`
+	AssignedTo       []*User    `json:"assignedTo,omitempty"`
 	Task             string     `json:"task"`
-	Deadline         *time.Time `json:"deadline,omitempty"`
 	CreatedAt        time.Time  `json:"createdAt"`
+	Deadline         *time.Time `json:"deadline,omitempty"`
+	PriorityLevel    string     `json:"priorityLevel"`
 	CompletionStatus string     `json:"completionStatus"`
 }
 

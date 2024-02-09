@@ -14,7 +14,7 @@ import (
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
-func GetUserById(id string) (*users.User, error) {
+func UserByStrId(id string) (*users.User, error) {
 	userId, err := primitive.ObjectIDFromHex(id)
 	if err != nil {
 		return nil, err

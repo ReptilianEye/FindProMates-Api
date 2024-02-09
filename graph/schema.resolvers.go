@@ -16,6 +16,32 @@ import (
 	"sync"
 )
 
+// Login is the resolver for the login field.
+func (r *mutationResolver) Login(ctx context.Context, input model.Login) (string, error) {
+	user, err := resolvers.Authenticate(input.Username, input.Email, input.Password)
+	if err != nil {
+		return "", err
+	}
+	token, err := jwt.GenerateToken(user.ID.Hex())
+	if err != nil {
+		return "", err
+	}
+	return token, nil
+}
+
+// RefreshToken is the resolver for the refreshToken field.
+func (r *mutationResolver) RefreshToken(ctx context.Context, oldToken string) (string, error) {
+	userId, err := jwt.ParseToken(oldToken)
+	if err != nil {
+		return "", err
+	}
+	token, err := jwt.GenerateToken(userId)
+	if err != nil {
+		return "", err
+	}
+	return token, nil
+}
+
 // CreateUser is the resolver for the createUser field.
 func (r *mutationResolver) CreateUser(ctx context.Context, newUser model.NewUser) (*model.User, error) {
 	user := resolvers.MapToUser(newUser)
@@ -57,7 +83,7 @@ func (r *mutationResolver) CreateProject(ctx context.Context, newProject model.N
 	if err != nil {
 		return nil, err
 	}
-	_, err = app.App.Projects.Create(&project)
+	_, err = app.App.Projects.Create(project)
 	if err != nil {
 		return nil, err
 	}
@@ -70,7 +96,7 @@ func (r *mutationResolver) UpdateProject(ctx context.Context, id string, updated
 	if err != nil {
 		return nil, err
 	}
-	project, err := resolvers.GetProjectById(id)
+	project, err := resolvers.ProjectByStrId(id)
 	if err != nil {
 		return nil, err
 	}
@@ -85,7 +111,7 @@ func (r *mutationResolver) UpdateProject(ctx context.Context, id string, updated
 	if err != nil {
 		return nil, err
 	}
-	return resolvers.MapToQueryProject(*project), nil
+	return resolvers.MapToQueryProject(project), nil
 }
 
 // DeleteProject is the resolver for the deleteProject field.
@@ -94,7 +120,7 @@ func (r *mutationResolver) DeleteProject(ctx context.Context, id string) (bool, 
 	if err != nil {
 		return false, err
 	}
-	project, err := resolvers.GetProjectById(id)
+	project, err := resolvers.ProjectByStrId(id)
 	if err != nil {
 		return false, err
 	}
@@ -106,32 +132,6 @@ func (r *mutationResolver) DeleteProject(ctx context.Context, id string) (bool, 
 		return false, err
 	}
 	return true, nil
-}
-
-// Login is the resolver for the login field.
-func (r *mutationResolver) Login(ctx context.Context, input model.Login) (string, error) {
-	user, err := resolvers.Authenticate(input.Username, input.Email, input.Password)
-	if err != nil {
-		return "", err
-	}
-	token, err := jwt.GenerateToken(user.ID.Hex())
-	if err != nil {
-		return "", err
-	}
-	return token, nil
-}
-
-// RefreshToken is the resolver for the refreshToken field.
-func (r *mutationResolver) RefreshToken(ctx context.Context, oldToken string) (string, error) {
-	userId, err := jwt.ParseToken(oldToken)
-	if err != nil {
-		return "", err
-	}
-	token, err := jwt.GenerateToken(userId)
-	if err != nil {
-		return "", err
-	}
-	return token, nil
 }
 
 // Users is the resolver for the users field.
@@ -154,7 +154,7 @@ func (r *queryResolver) Me(ctx context.Context) (*model.User, error) {
 
 // User is the resolver for the user field.
 func (r *queryResolver) User(ctx context.Context, id string) (*model.User, error) {
-	user, err := resolvers.GetUserById(id)
+	user, err := resolvers.UserByStrId(id)
 	if err != nil {
 		return nil, err
 	}
@@ -226,14 +226,14 @@ func (r *queryResolver) Project(ctx context.Context, id string) (*model.Project,
 	if err != nil {
 		return nil, err
 	}
-	project, err := resolvers.GetProjectById(id)
+	project, err := resolvers.ProjectByStrId(id)
 	if err != nil {
 		return nil, err
 	}
 	if !resolvers.CanQueryProject(project, user) {
 		return nil, fmt.Errorf("access denied")
 	}
-	return resolvers.MapToQueryProject(*project), nil
+	return resolvers.MapToQueryProject(project), nil
 }
 
 // UserProjectsByID is the resolver for the userProjectsById field.
@@ -243,27 +243,79 @@ func (r *queryResolver) UserProjectsByID(ctx context.Context, id string) ([]*mod
 
 // NotesByProject is the resolver for the notesByProject field.
 func (r *queryResolver) NotesByProject(ctx context.Context, id string) ([]*model.Note, error) {
-	panic(fmt.Errorf("not implemented: NotesByProject - notesByProject"))
+	project, err := resolvers.ProjectByStrId(id)
+	if err != nil {
+		return nil, err
+	}
+	user, err := resolvers.UserFromContex(ctx)
+	if err != nil {
+		return nil, err
+	}
+	if !resolvers.CanMutateProject(project, user) {
+		return nil, fmt.Errorf("access denied")
+	}
+	notes, err := app.App.Notes.AllByProjectId(project.ID)
+	if err != nil {
+		return nil, err
+	}
+	return utils.MapTo(notes, resolvers.MapToQueryNote), nil
 }
 
 // Note is the resolver for the note field.
 func (r *queryResolver) Note(ctx context.Context, id string) (*model.Note, error) {
-	panic(fmt.Errorf("not implemented: Note - note"))
+	user, err := resolvers.UserFromContex(ctx)
+	if err != nil {
+		return nil, err
+	}
+	note, err := resolvers.GetNoteById(id)
+	if err != nil {
+		return nil, err
+	}
+	if !resolvers.CanMutateProject(resolvers.ProjectByObjId(note.ProjectID), user) {
+		return nil, fmt.Errorf("access denied")
+	}
+	return resolvers.MapToQueryNote(note), nil
 }
 
 // Tasks is the resolver for the tasks field.
 func (r *queryResolver) Tasks(ctx context.Context) ([]*model.Task, error) {
-	panic(fmt.Errorf("not implemented: Tasks - tasks"))
+	user, err := resolvers.UserFromContex(ctx)
+	if err != nil {
+		return nil, err
+	}
+	return resolvers.TasksAssignedToUser(user)
 }
 
 // TaskByProject is the resolver for the taskByProject field.
 func (r *queryResolver) TaskByProject(ctx context.Context, id string) ([]*model.Task, error) {
-	panic(fmt.Errorf("not implemented: TaskByProject - taskByProject"))
+	user, err := resolvers.UserFromContex(ctx)
+	if err != nil {
+		return nil, err
+	}
+	project, err := resolvers.ProjectByStrId(id)
+	if err != nil {
+		return nil, err
+	}
+	if !resolvers.CanMutateProject(project, user) {
+		return nil, fmt.Errorf("access denied")
+	}
+	return resolvers.TasksByProject(project)
 }
 
 // Task is the resolver for the task field.
 func (r *queryResolver) Task(ctx context.Context, id string) (*model.Task, error) {
-	panic(fmt.Errorf("not implemented: Task - task"))
+	user, err := resolvers.UserFromContex(ctx)
+	if err != nil {
+		return nil, err
+	}
+	task, err := resolvers.TaskById(id)
+	if err != nil {
+		return nil, err
+	}
+	if !resolvers.CanMutateProject(resolvers.ProjectByObjId(task.ProjectID), user) {
+		return nil, fmt.Errorf("access denied")
+	}
+	return resolvers.MapToQueryTask(task), nil
 }
 
 // Mutation returns MutationResolver implementation.

@@ -22,8 +22,8 @@ type ProjectModel struct {
 
 var ctx = context.TODO()
 
-func (m *ProjectModel) All() ([]Project, error) {
-	projects := []Project{}
+func (m *ProjectModel) All() ([]*Project, error) {
+	projects := []*Project{}
 	cursor, err := m.C.Find(ctx, bson.M{})
 	if err != nil {
 		return nil, err
@@ -42,8 +42,8 @@ func (m *ProjectModel) FindById(id primitive.ObjectID) (*Project, error) {
 	}
 	return &project, nil
 }
-func (m *ProjectModel) FindByOwner(owner primitive.ObjectID) ([]Project, error) {
-	projects := []Project{}
+func (m *ProjectModel) FindByOwner(owner primitive.ObjectID) ([]*Project, error) {
+	projects := []*Project{}
 	cursor, err := m.C.Find(ctx, bson.M{"owner": owner})
 	if err != nil {
 		return nil, err
@@ -54,8 +54,8 @@ func (m *ProjectModel) FindByOwner(owner primitive.ObjectID) ([]Project, error) 
 	}
 	return projects, nil
 }
-func (m *ProjectModel) FindAllUserIsCollaborator(user primitive.ObjectID) ([]Project, error) {
-	var projects []Project
+func (m *ProjectModel) FindAllUserIsCollaborator(user primitive.ObjectID) ([]*Project, error) {
+	var projects []*Project
 	cursor, err := m.C.Find(ctx, bson.D{
 		{Collaborators, user}, //https://www.mongodb.com/docs/manual/tutorial/query-arrays/
 	})
