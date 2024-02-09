@@ -1,43 +1,34 @@
 package resolvers
 
 import (
-	"context"
 	"example/FindProMates-Api/graph/model"
 	"example/FindProMates-Api/internal/app"
-	"example/FindProMates-Api/internal/auth"
 	"example/FindProMates-Api/internal/database/projects"
 	"example/FindProMates-Api/internal/database/users"
 	"example/FindProMates-Api/internal/database/util_types"
 	"example/FindProMates-Api/internal/pkg/utils"
 	"fmt"
-	"log"
+	"slices"
 
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
-func GetProjectById(ctx context.Context, id string) (*projects.Project, error) {
-	userId := auth.ForContext(ctx)
-	if userId == "" {
-		return nil, fmt.Errorf("access denied")
-	}
-	userIdObj, err := primitive.ObjectIDFromHex(userId)
-	if err != nil {
-		return nil, err
-	}
+func GetProjectById(id string) (*projects.Project, error) {
 	projectId, err := primitive.ObjectIDFromHex(id)
 	if err != nil {
 		return nil, err
 	}
-	project, err := app.App.Projects.FindById(projectId)
-	if err != nil {
-		return nil, err
-	}
-	if project.Owner != userIdObj {
-		return nil, fmt.Errorf("access denied")
-	}
-	return project, nil
+	return app.App.Projects.FindById(projectId)
 }
-
+func CanQueryProject(project *projects.Project, user *users.User) bool {
+	return project.Public || CanMutateProject(project, user)
+}
+func CanMutateProject(project *projects.Project, user *users.User) bool {
+	return IsOwner(project, user) || slices.Contains(project.Collaborators, user.ID)
+}
+func IsOwner(project *projects.Project, user *users.User) bool {
+	return project.Owner == user.ID
+}
 func ProjectsOwnedByUser(user *users.User) ([]*model.Project, error) {
 	ownedProjects, err := app.App.Projects.FindByOwner(user.ID)
 	if err != nil {
@@ -45,7 +36,7 @@ func ProjectsOwnedByUser(user *users.User) ([]*model.Project, error) {
 	}
 	return utils.MapTo(ownedProjects, MapToQueryProject), nil
 }
-func ProjectsCollaboratedOnByUser(user *users.User) ([]*model.Project, error) {
+func ProjectsCollaboratedByUser(user *users.User) ([]*model.Project, error) {
 	collaboratedProjects, err := app.App.Projects.FindAllUserIsCollaborator(user.ID)
 	if err != nil {
 		return nil, err
@@ -58,46 +49,57 @@ func MapToQueryProject(project projects.Project) *model.Project {
 		ID:          project.ID.Hex(),
 		Name:        project.Name,
 		Description: project.Description,
-		Owner:       MapToQueryUser(*userFromId(project.Owner)),
+		Owner:       MapToQueryUser(UserByObjId(project.Owner)),
 		Collaborators: utils.MapTo(project.Collaborators, func(collaborator primitive.ObjectID) *model.User {
-			return MapToQueryUser(*userFromId(collaborator))
+			return MapToQueryUser(UserByObjId(collaborator))
 		}),
 		SkillsNeeded: utils.MapTo(project.SkillsNeeded, func(skill util_types.Skill) string {
 			return skill.String()
 		}),
 	}
 }
-func MapToProjectFromNew(project model.NewProject, ownerId primitive.ObjectID) projects.Project {
-	var collaborators []string
-	if project.Collaborators != nil {
-		collaborators = project.Collaborators
+func MapToProjectFromNew(newProject model.NewProject, ownerId primitive.ObjectID) (projects.Project, error) {
+	collaborators := utils.Elivis(&newProject.Collaborators, []string{})
+	collaboratorsObj, err := handleCollaborators(collaborators, ownerId.Hex())
+	if err != nil {
+		return projects.Project{}, err
 	}
-	var description string
-	if project.Description != nil {
-		description = *project.Description
-	} else {
-		description = ""
+	skillsNeeded := utils.Elivis(&newProject.SkillsNeeded, []string{})
+	skillsNeededObj, err := handleSkillsNeeded(skillsNeeded)
+	if err != nil {
+		return projects.Project{}, err
 	}
 	return projects.Project{
-		Name:          project.Name,
-		Description:   description,
+		Name:          newProject.Name,
+		Description:   utils.Elivis(newProject.Description, ""),
 		Owner:         ownerId,
-		Collaborators: handleCollaborators(collaborators, ownerId.Hex()),
-	}
+		Public:        utils.Elivis(newProject.Public, false),
+		Collaborators: collaboratorsObj,
+		SkillsNeeded:  skillsNeededObj,
+	}, nil
 }
-func UpdateProject(baseProject *projects.Project, project model.UpdatedProject) {
+func UpdateProject(baseProject *projects.Project, project model.UpdatedProject) error {
 	baseProject.Name = utils.Elivis(project.Name, baseProject.Name)
 	baseProject.Description = utils.Elivis(project.Description, baseProject.Description)
+	baseProject.Public = utils.Elivis(project.Public, baseProject.Public)
 	if project.Collaborators != nil {
-		baseProject.Collaborators = handleCollaborators(project.Collaborators, baseProject.Owner.Hex())
+		collabs, err := handleCollaborators(project.Collaborators, baseProject.Owner.Hex())
+		if err != nil {
+			return err
+		}
+		baseProject.Collaborators = collabs
 	}
 	if project.SkillsNeeded != nil {
-		skills := handleSkillsNeeded(project.SkillsNeeded)
-		fmt.Println(skills)
+		skills, err := handleSkillsNeeded(project.SkillsNeeded, baseProject.SkillsNeeded...)
+		if err != nil {
+			return err
+		}
 		baseProject.SkillsNeeded = skills
 	}
+
+	return nil
 }
-func AllPublicProjects() ([]*model.Project, error) {
+func PublicProjects() ([]*model.Project, error) {
 	projectsArr, err := app.App.Projects.All()
 	if err != nil {
 		return nil, err
@@ -107,26 +109,31 @@ func AllPublicProjects() ([]*model.Project, error) {
 	publicProjectsArr := utils.MapTo(publicProjectsPtrArr, func(p *projects.Project) projects.Project { return *p })
 	return utils.MapTo(publicProjectsArr, MapToQueryProject), nil
 }
-func handleCollaborators(collabs []string, owner string, base ...primitive.ObjectID) []primitive.ObjectID {
-	safePrimitive := func(a string) primitive.ObjectID {
-		id, err := primitive.ObjectIDFromHex(a)
+func handleCollaborators(collabs []string, owner string, base ...primitive.ObjectID) ([]primitive.ObjectID, error) {
+	toString := func(id primitive.ObjectID) (string, error) {
+		return id.Hex(), nil
+	}
+	safePrimitive := func(strId string) (primitive.ObjectID, error) {
+		id, err := primitive.ObjectIDFromHex(strId)
 		if err != nil {
-			log.Fatal()
+			return primitive.ObjectID{}, fmt.Errorf("provided collaborator id: '%s' is invalid: %v", strId, err)
 		}
-		return id
+		return id, nil
+
 	}
-	return utils.MergeSlices(base, collabs, primitive.ObjectID.Hex, safePrimitive, owner)
+	return utils.MergeSlices(base, collabs, toString, safePrimitive, owner)
 }
-func handleSkillsNeeded(skills []string, base ...util_types.Skill) []util_types.Skill {
-	toString := func(s util_types.Skill) string {
-		return s.String()
+func handleSkillsNeeded(skills []string, base ...util_types.Skill) ([]util_types.Skill, error) {
+	toString := func(s util_types.Skill) (string, error) {
+		return s.String(), nil
 	}
-	fromString := (func(s string) util_types.Skill {
+	fromString := func(s string) (util_types.Skill, error) {
 		skill := util_types.Skill(s)
 		if !skill.IsValid() {
-			log.Fatal()
+			return skill, fmt.Errorf("invalid skill")
 		}
-		return skill
-	})
+		return skill, nil
+
+	}
 	return utils.MergeSlices(base, skills, toString, fromString)
 }

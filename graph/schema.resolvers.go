@@ -17,9 +17,9 @@ import (
 )
 
 // CreateUser is the resolver for the createUser field.
-func (r *mutationResolver) CreateUser(ctx context.Context, input model.NewUser) (*model.User, error) {
-	user := resolvers.MapToUser(input)
-	_, err := app.App.Users.Create(&user)
+func (r *mutationResolver) CreateUser(ctx context.Context, newUser model.NewUser) (*model.User, error) {
+	user := resolvers.MapToUser(newUser)
+	_, err := app.App.Users.Create(user)
 	if err != nil {
 		return nil, err
 	}
@@ -27,33 +27,36 @@ func (r *mutationResolver) CreateUser(ctx context.Context, input model.NewUser) 
 }
 
 // UpdateUser is the resolver for the updateUser field.
-func (r *mutationResolver) UpdateUser(ctx context.Context, input model.UpdatedUser) (*model.User, error) {
-	user, err := resolvers.GetUserFromContex(ctx)
+func (r *mutationResolver) UpdateUser(ctx context.Context, updatedUser model.UpdatedUser) (*model.User, error) {
+	user, err := resolvers.UserFromContex(ctx)
 	if err != nil {
 		return nil, err
 	}
 	changingPassword := false
-	if input.OldPassword != nil {
-		if !app.App.Users.Authenticate(users.BuildUserInfo(&user.Username, nil), *input.OldPassword) {
+	if updatedUser.OldPassword != nil {
+		if !app.App.Users.Authenticate(users.BuildUserInfo(&user.Username, nil), *updatedUser.OldPassword) {
 			return nil, fmt.Errorf("old password is incorrect")
 		}
 		changingPassword = true
 	}
-	resolvers.UpdateUser(user, input)
+	resolvers.UpdateUser(user, updatedUser)
 	_, err = app.App.Users.Update(user, changingPassword)
 	if err != nil {
 		return nil, err
 	}
-	return resolvers.MapToQueryUser(*user), nil
+	return resolvers.MapToQueryUser(user), nil
 }
 
 // CreateProject is the resolver for the createProject field.
-func (r *mutationResolver) CreateProject(ctx context.Context, input model.NewProject) (*model.Project, error) {
-	owner, err := resolvers.GetUserFromContex(ctx)
+func (r *mutationResolver) CreateProject(ctx context.Context, newProject model.NewProject) (*model.Project, error) {
+	owner, err := resolvers.UserFromContex(ctx)
 	if err != nil {
 		return nil, err
 	}
-	project := resolvers.MapToProjectFromNew(input, owner.ID)
+	project, err := resolvers.MapToProjectFromNew(newProject, owner.ID)
+	if err != nil {
+		return nil, err
+	}
 	_, err = app.App.Projects.Create(&project)
 	if err != nil {
 		return nil, err
@@ -62,12 +65,22 @@ func (r *mutationResolver) CreateProject(ctx context.Context, input model.NewPro
 }
 
 // UpdateProject is the resolver for the updateProject field.
-func (r *mutationResolver) UpdateProject(ctx context.Context, id string, input model.UpdatedProject) (*model.Project, error) {
-	project, err := resolvers.GetProjectById(ctx, id)
+func (r *mutationResolver) UpdateProject(ctx context.Context, id string, updatedProject model.UpdatedProject) (*model.Project, error) {
+	user, err := resolvers.UserFromContex(ctx)
 	if err != nil {
 		return nil, err
 	}
-	resolvers.UpdateProject(project, input)
+	project, err := resolvers.GetProjectById(id)
+	if err != nil {
+		return nil, err
+	}
+	if !resolvers.CanMutateProject(project, user) {
+		return nil, fmt.Errorf("access denied")
+	}
+	err = resolvers.UpdateProject(project, updatedProject)
+	if err != nil {
+		return nil, err
+	}
 	_, err = app.App.Projects.Update(project.ID, project)
 	if err != nil {
 		return nil, err
@@ -77,9 +90,16 @@ func (r *mutationResolver) UpdateProject(ctx context.Context, id string, input m
 
 // DeleteProject is the resolver for the deleteProject field.
 func (r *mutationResolver) DeleteProject(ctx context.Context, id string) (bool, error) {
-	project, err := resolvers.GetProjectById(ctx, id)
+	user, err := resolvers.UserFromContex(ctx)
 	if err != nil {
 		return false, err
+	}
+	project, err := resolvers.GetProjectById(id)
+	if err != nil {
+		return false, err
+	}
+	if !resolvers.IsOwner(project, user) {
+		return false, fmt.Errorf("access denied")
 	}
 	_, err = app.App.Projects.Delete(project.ID)
 	if err != nil {
@@ -102,8 +122,8 @@ func (r *mutationResolver) Login(ctx context.Context, input model.Login) (string
 }
 
 // RefreshToken is the resolver for the refreshToken field.
-func (r *mutationResolver) RefreshToken(ctx context.Context, input string) (string, error) {
-	userId, err := jwt.ParseToken(input)
+func (r *mutationResolver) RefreshToken(ctx context.Context, oldToken string) (string, error) {
+	userId, err := jwt.ParseToken(oldToken)
 	if err != nil {
 		return "", err
 	}
@@ -125,53 +145,63 @@ func (r *queryResolver) Users(ctx context.Context) ([]*model.User, error) {
 
 // Me is the resolver for the me field.
 func (r *queryResolver) Me(ctx context.Context) (*model.User, error) {
-	panic(fmt.Errorf("not implemented: Me - me"))
+	user, err := resolvers.UserFromContex(ctx)
+	if err != nil {
+		return nil, err
+	}
+	return resolvers.MapToQueryUser(user), nil
 }
 
 // User is the resolver for the user field.
 func (r *queryResolver) User(ctx context.Context, id string) (*model.User, error) {
-	panic(fmt.Errorf("not implemented: User - user"))
+	user, err := resolvers.GetUserById(id)
+	if err != nil {
+		return nil, err
+	}
+	return resolvers.MapToQueryUser(user), nil
 }
 
 // Projects is the resolver for the projects field.
 func (r *queryResolver) Projects(ctx context.Context) (*model.AllProjects, error) {
-	needToWaitFor := 1 // AllPublicProjects, ProjectsOwnedByUser, ProjectsCollaboratedOnByUser
+	needToWaitFor := 3 // AllPublicProjects, ProjectsOwnedByUser, ProjectsCollaboratedOnByUser
 	errors := make(chan error, needToWaitFor)
 	publicProjectsChan := make(chan []*model.Project)
 	ownedProjectsChan := make(chan []*model.Project)
 	collaboratedProjectsChan := make(chan []*model.Project)
 	go func() {
 		fmt.Println("Getting public projects")
-		publicProjects, err := resolvers.AllPublicProjects()
+		publicProjects, err := resolvers.PublicProjects()
 		errors <- err
 		if err == nil {
 			publicProjectsChan <- publicProjects
 		}
 	}()
 	go func() {
-		wg := sync.WaitGroup{}
-		wg.Add(2)
-		user, err := resolvers.GetUserFromContex(ctx)
-		if err != nil {
+		user, err := resolvers.UserFromContex(ctx)
+		if err != nil { //error here means user is not logged in so we can just return public projects
+			errors <- nil
+			errors <- nil
 			ownedProjectsChan <- nil
 			collaboratedProjectsChan <- nil
 			return
 		}
+		wg := sync.WaitGroup{}
+		wg.Add(2)
 		go func() {
 			fmt.Println("Getting owned projects")
-			userOwnedProjects, err := resolvers.ProjectsOwnedByUser(user)
+			ownedProjects, err := resolvers.ProjectsOwnedByUser(user)
 			errors <- err
 			if err == nil {
-				ownedProjectsChan <- userOwnedProjects
+				ownedProjectsChan <- ownedProjects
 			}
 			wg.Done()
 		}()
 		go func() {
 			fmt.Println("Getting collaborated projects")
-			userCollaboratedProjects, err := resolvers.ProjectsCollaboratedOnByUser(user)
+			collaboratedProjects, err := resolvers.ProjectsCollaboratedByUser(user)
 			errors <- err
 			if err == nil {
-				collaboratedProjectsChan <- userCollaboratedProjects
+				collaboratedProjectsChan <- collaboratedProjects
 			}
 			wg.Done()
 		}()
@@ -183,24 +213,25 @@ func (r *queryResolver) Projects(ctx context.Context) (*model.AllProjects, error
 			return nil, err
 		}
 	}
-	publicProjects := <-publicProjectsChan
-	// return &model.Projects{
-	// 	Public:       <-publicProjectsChan,
-	// 	Owned:        <-ownedProjectsChan,
-	// 	Collaborated: <-collaboratedProjectsChan,
-	// }, nil
 	return &model.AllProjects{
-		Public:       publicProjects,
-		Owned:        nil,
-		Collaborated: nil,
+		Public:       <-publicProjectsChan,
+		Owned:        <-ownedProjectsChan,
+		Collaborated: <-collaboratedProjectsChan,
 	}, nil
 }
 
 // Project is the resolver for the project field.
 func (r *queryResolver) Project(ctx context.Context, id string) (*model.Project, error) {
-	project, err := resolvers.GetProjectById(ctx, id)
+	user, err := resolvers.UserFromContex(ctx)
 	if err != nil {
 		return nil, err
+	}
+	project, err := resolvers.GetProjectById(id)
+	if err != nil {
+		return nil, err
+	}
+	if !resolvers.CanQueryProject(project, user) {
+		return nil, fmt.Errorf("access denied")
 	}
 	return resolvers.MapToQueryProject(*project), nil
 }

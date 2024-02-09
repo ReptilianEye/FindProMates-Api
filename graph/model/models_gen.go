@@ -34,8 +34,9 @@ type Mutation struct {
 type NewProject struct {
 	Name          string   `json:"name"`
 	Description   *string  `json:"description,omitempty"`
+	Public        *bool    `json:"public,omitempty"`
 	Collaborators []string `json:"collaborators,omitempty"`
-	SkillsNeeded  []string `json:"skills_needed"`
+	SkillsNeeded  []string `json:"skills_needed,omitempty"`
 }
 
 type NewUser struct {
@@ -81,6 +82,7 @@ type Task struct {
 type UpdatedProject struct {
 	Name          *string  `json:"name,omitempty"`
 	Description   *string  `json:"description,omitempty"`
+	Public        *bool    `json:"public,omitempty"`
 	Collaborators []string `json:"collaborators,omitempty"`
 	SkillsNeeded  []string `json:"skills_needed,omitempty"`
 }

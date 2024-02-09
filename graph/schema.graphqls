@@ -80,13 +80,15 @@ input UpdatedUser {
 input NewProject {
   name: String!
   description: String
+  public: Boolean
   collaborators: [ID!]
-  skills_needed: [String!]!
+  skills_needed: [String!]
 }
 
 input UpdatedProject {
   name: String
   description: String
+  public: Boolean
   collaborators: [ID!]
   skills_needed: [String!]
 }
@@ -115,11 +117,11 @@ type Query {
 }
 
 type Mutation {
-  createUser(input: NewUser!): User!
-  updateUser(input: UpdatedUser!): User!
-  createProject(input: NewProject!): Project!
-  updateProject(id: ID!, input: UpdatedProject!): Project!
+  createUser(newUser: NewUser!): User!
+  updateUser(updatedUser: UpdatedUser!): User!
+  createProject(newProject: NewProject!): Project!
+  updateProject(id: ID!, updatedProject: UpdatedProject!): Project!
   deleteProject(id: ID!): Boolean!
   login(input: Login!): String!
-  refreshToken(input: String!): String!
+  refreshToken(old_token: String!): String!
 }

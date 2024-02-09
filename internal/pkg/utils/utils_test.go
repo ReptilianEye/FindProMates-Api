@@ -163,13 +163,17 @@ func TestSet(t *testing.T) {
 	t.Run("TestToSet", func(t *testing.T) {
 		a := []int{1, 2, 3, 5, 4, 2, 1, 1}
 		want := []int{1, 2, 3, 5, 4}
-		mapper := func(i int) string { return strconv.Itoa(i) }
-		got := ToSet(a, mapper)
+		mapper := func(i int) (string, error) { return strconv.Itoa(i), nil }
+		got, err := ToSet(a, mapper)
+		if err != nil {
+			t.Errorf("ToSet() = %v, want %v", err, nil)
+		}
 		if len(got) != len(want) {
 			t.Errorf("Set() = %v, want %v", got, want)
 		}
 		for _, v := range want {
-			if !got.Contains(mapper(v)) {
+			mapped, _ := mapper(v)
+			if !got.Contains(mapped) {
 				t.Errorf("Value %v not found in %v", v, want)
 			}
 		}
@@ -177,11 +181,15 @@ func TestSet(t *testing.T) {
 	t.Run("TestSetToSlice", func(t *testing.T) {
 		a := []int{1, 2, 3, 5, 4, 2, 1, 1}
 		want := []int{1, 2, 3, 5, 4}
-		mapper := func(i int) string { return strconv.Itoa(i) }
-		got := ToSlice(ToSet(a, mapper), func(s string) int {
-			i, _ := strconv.Atoi(s)
-			return i
-		}, "1", "5", "2")
+		mapper := func(i int) (string, error) { return strconv.Itoa(i), nil }
+		s, err := ToSet(a, mapper)
+		if err != nil {
+			t.Errorf("ToSet() = %v, want %v", err, nil)
+		}
+		got, err := ToSlice(s, func(s string) (int, error) { return strconv.Atoi(s) }, "1", "5", "2")
+		if err != nil {
+			t.Errorf("ToSlice() = %v, want %v", err, nil)
+		}
 		if len(got) != len(want) {
 			t.Errorf("Set() = %v, want %v", got, want)
 		}
@@ -205,13 +213,16 @@ func TestSet(t *testing.T) {
 		a := []int{1, 2, 3, 5, 4, 2, 1, 1}
 		b := []int{1, 1, 4, 10, 12}
 		want := []int{1, 2, 3, 5, 4, 10, 12}
-		mapper := func(i int) string { return strconv.Itoa(i) }
-		got := ToSet(a, mapper).Union(ToSet(b, mapper))
+		mapper := func(i int) (string, error) { return strconv.Itoa(i), nil }
+		as, _ := ToSet(a, mapper)
+		bs, _ := ToSet(b, mapper)
+		got := as.Union(bs)
 		if len(got) != len(want) {
 			t.Errorf("Set() = %v, want %v", got, want)
 		}
 		for _, v := range want {
-			if !got.Contains(mapper(v)) {
+			val, _ := mapper(v)
+			if !got.Contains(val) {
 				t.Errorf("Value %v not found in %v", v, want)
 			}
 		}
@@ -220,13 +231,16 @@ func TestSet(t *testing.T) {
 		a := []int{1, 5, 2, 5, 1, 10, 2}
 		b := []int{5, 2, 5, 2, 3, 4, 7, 9, 10}
 		want := []int{5, 2, 10}
-		mapper := func(i int) string { return strconv.Itoa(i) }
-		got := ToSet(a, mapper).Intersection(ToSet(b, mapper))
+		mapper := func(i int) (string, error) { return strconv.Itoa(i), nil }
+		as, _ := ToSet(a, mapper)
+		bs, _ := ToSet(b, mapper)
+		got := as.Intersection(bs)
 		if len(got) != len(want) {
 			t.Errorf("Set() = %v, want %v", got, want)
 		}
 		for _, v := range want {
-			if !got.Contains(mapper(v)) {
+			val, _ := mapper(v)
+			if !got.Contains(val) {
 				t.Errorf("Value %v not found in %v", v, want)
 			}
 		}

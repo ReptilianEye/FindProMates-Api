@@ -65,13 +65,13 @@ type ComplexityRoot struct {
 	}
 
 	Mutation struct {
-		CreateProject func(childComplexity int, input model.NewProject) int
-		CreateUser    func(childComplexity int, input model.NewUser) int
+		CreateProject func(childComplexity int, newProject model.NewProject) int
+		CreateUser    func(childComplexity int, newUser model.NewUser) int
 		DeleteProject func(childComplexity int, id string) int
 		Login         func(childComplexity int, input model.Login) int
-		RefreshToken  func(childComplexity int, input string) int
-		UpdateProject func(childComplexity int, id string, input model.UpdatedProject) int
-		UpdateUser    func(childComplexity int, input model.UpdatedUser) int
+		RefreshToken  func(childComplexity int, oldToken string) int
+		UpdateProject func(childComplexity int, id string, updatedProject model.UpdatedProject) int
+		UpdateUser    func(childComplexity int, updatedUser model.UpdatedUser) int
 	}
 
 	Note struct {
@@ -127,13 +127,13 @@ type ComplexityRoot struct {
 }
 
 type MutationResolver interface {
-	CreateUser(ctx context.Context, input model.NewUser) (*model.User, error)
-	UpdateUser(ctx context.Context, input model.UpdatedUser) (*model.User, error)
-	CreateProject(ctx context.Context, input model.NewProject) (*model.Project, error)
-	UpdateProject(ctx context.Context, id string, input model.UpdatedProject) (*model.Project, error)
+	CreateUser(ctx context.Context, newUser model.NewUser) (*model.User, error)
+	UpdateUser(ctx context.Context, updatedUser model.UpdatedUser) (*model.User, error)
+	CreateProject(ctx context.Context, newProject model.NewProject) (*model.Project, error)
+	UpdateProject(ctx context.Context, id string, updatedProject model.UpdatedProject) (*model.Project, error)
 	DeleteProject(ctx context.Context, id string) (bool, error)
 	Login(ctx context.Context, input model.Login) (string, error)
-	RefreshToken(ctx context.Context, input string) (string, error)
+	RefreshToken(ctx context.Context, oldToken string) (string, error)
 }
 type QueryResolver interface {
 	Users(ctx context.Context) ([]*model.User, error)
@@ -248,7 +248,7 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 			return 0, false
 		}
 
-		return e.complexity.Mutation.CreateProject(childComplexity, args["input"].(model.NewProject)), true
+		return e.complexity.Mutation.CreateProject(childComplexity, args["newProject"].(model.NewProject)), true
 
 	case "Mutation.createUser":
 		if e.complexity.Mutation.CreateUser == nil {
@@ -260,7 +260,7 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 			return 0, false
 		}
 
-		return e.complexity.Mutation.CreateUser(childComplexity, args["input"].(model.NewUser)), true
+		return e.complexity.Mutation.CreateUser(childComplexity, args["newUser"].(model.NewUser)), true
 
 	case "Mutation.deleteProject":
 		if e.complexity.Mutation.DeleteProject == nil {
@@ -296,7 +296,7 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 			return 0, false
 		}
 
-		return e.complexity.Mutation.RefreshToken(childComplexity, args["input"].(string)), true
+		return e.complexity.Mutation.RefreshToken(childComplexity, args["old_token"].(string)), true
 
 	case "Mutation.updateProject":
 		if e.complexity.Mutation.UpdateProject == nil {
@@ -308,7 +308,7 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 			return 0, false
 		}
 
-		return e.complexity.Mutation.UpdateProject(childComplexity, args["id"].(string), args["input"].(model.UpdatedProject)), true
+		return e.complexity.Mutation.UpdateProject(childComplexity, args["id"].(string), args["updatedProject"].(model.UpdatedProject)), true
 
 	case "Mutation.updateUser":
 		if e.complexity.Mutation.UpdateUser == nil {
@@ -320,7 +320,7 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 			return 0, false
 		}
 
-		return e.complexity.Mutation.UpdateUser(childComplexity, args["input"].(model.UpdatedUser)), true
+		return e.complexity.Mutation.UpdateUser(childComplexity, args["updatedUser"].(model.UpdatedUser)), true
 
 	case "Note.addedBy":
 		if e.complexity.Note.AddedBy == nil {
@@ -742,14 +742,14 @@ func (ec *executionContext) field_Mutation_createProject_args(ctx context.Contex
 	var err error
 	args := map[string]interface{}{}
 	var arg0 model.NewProject
-	if tmp, ok := rawArgs["input"]; ok {
-		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("input"))
+	if tmp, ok := rawArgs["newProject"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("newProject"))
 		arg0, err = ec.unmarshalNNewProject2exampleᚋFindProMatesᚑApiᚋgraphᚋmodelᚐNewProject(ctx, tmp)
 		if err != nil {
 			return nil, err
 		}
 	}
-	args["input"] = arg0
+	args["newProject"] = arg0
 	return args, nil
 }
 
@@ -757,14 +757,14 @@ func (ec *executionContext) field_Mutation_createUser_args(ctx context.Context, 
 	var err error
 	args := map[string]interface{}{}
 	var arg0 model.NewUser
-	if tmp, ok := rawArgs["input"]; ok {
-		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("input"))
+	if tmp, ok := rawArgs["newUser"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("newUser"))
 		arg0, err = ec.unmarshalNNewUser2exampleᚋFindProMatesᚑApiᚋgraphᚋmodelᚐNewUser(ctx, tmp)
 		if err != nil {
 			return nil, err
 		}
 	}
-	args["input"] = arg0
+	args["newUser"] = arg0
 	return args, nil
 }
 
@@ -802,14 +802,14 @@ func (ec *executionContext) field_Mutation_refreshToken_args(ctx context.Context
 	var err error
 	args := map[string]interface{}{}
 	var arg0 string
-	if tmp, ok := rawArgs["input"]; ok {
-		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("input"))
+	if tmp, ok := rawArgs["old_token"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("old_token"))
 		arg0, err = ec.unmarshalNString2string(ctx, tmp)
 		if err != nil {
 			return nil, err
 		}
 	}
-	args["input"] = arg0
+	args["old_token"] = arg0
 	return args, nil
 }
 
@@ -826,14 +826,14 @@ func (ec *executionContext) field_Mutation_updateProject_args(ctx context.Contex
 	}
 	args["id"] = arg0
 	var arg1 model.UpdatedProject
-	if tmp, ok := rawArgs["input"]; ok {
-		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("input"))
+	if tmp, ok := rawArgs["updatedProject"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("updatedProject"))
 		arg1, err = ec.unmarshalNUpdatedProject2exampleᚋFindProMatesᚑApiᚋgraphᚋmodelᚐUpdatedProject(ctx, tmp)
 		if err != nil {
 			return nil, err
 		}
 	}
-	args["input"] = arg1
+	args["updatedProject"] = arg1
 	return args, nil
 }
 
@@ -841,14 +841,14 @@ func (ec *executionContext) field_Mutation_updateUser_args(ctx context.Context, 
 	var err error
 	args := map[string]interface{}{}
 	var arg0 model.UpdatedUser
-	if tmp, ok := rawArgs["input"]; ok {
-		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("input"))
+	if tmp, ok := rawArgs["updatedUser"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("updatedUser"))
 		arg0, err = ec.unmarshalNUpdatedUser2exampleᚋFindProMatesᚑApiᚋgraphᚋmodelᚐUpdatedUser(ctx, tmp)
 		if err != nil {
 			return nil, err
 		}
 	}
-	args["input"] = arg0
+	args["updatedUser"] = arg0
 	return args, nil
 }
 
@@ -1544,7 +1544,7 @@ func (ec *executionContext) _Mutation_createUser(ctx context.Context, field grap
 	}()
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Mutation().CreateUser(rctx, fc.Args["input"].(model.NewUser))
+		return ec.resolvers.Mutation().CreateUser(rctx, fc.Args["newUser"].(model.NewUser))
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -1613,7 +1613,7 @@ func (ec *executionContext) _Mutation_updateUser(ctx context.Context, field grap
 	}()
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Mutation().UpdateUser(rctx, fc.Args["input"].(model.UpdatedUser))
+		return ec.resolvers.Mutation().UpdateUser(rctx, fc.Args["updatedUser"].(model.UpdatedUser))
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -1682,7 +1682,7 @@ func (ec *executionContext) _Mutation_createProject(ctx context.Context, field g
 	}()
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Mutation().CreateProject(rctx, fc.Args["input"].(model.NewProject))
+		return ec.resolvers.Mutation().CreateProject(rctx, fc.Args["newProject"].(model.NewProject))
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -1753,7 +1753,7 @@ func (ec *executionContext) _Mutation_updateProject(ctx context.Context, field g
 	}()
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Mutation().UpdateProject(rctx, fc.Args["id"].(string), fc.Args["input"].(model.UpdatedProject))
+		return ec.resolvers.Mutation().UpdateProject(rctx, fc.Args["id"].(string), fc.Args["updatedProject"].(model.UpdatedProject))
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -1934,7 +1934,7 @@ func (ec *executionContext) _Mutation_refreshToken(ctx context.Context, field gr
 	}()
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Mutation().RefreshToken(rctx, fc.Args["input"].(string))
+		return ec.resolvers.Mutation().RefreshToken(rctx, fc.Args["old_token"].(string))
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -5822,7 +5822,7 @@ func (ec *executionContext) unmarshalInputNewProject(ctx context.Context, obj in
 		asMap[k] = v
 	}
 
-	fieldsInOrder := [...]string{"name", "description", "collaborators", "skills_needed"}
+	fieldsInOrder := [...]string{"name", "description", "public", "collaborators", "skills_needed"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
@@ -5843,6 +5843,13 @@ func (ec *executionContext) unmarshalInputNewProject(ctx context.Context, obj in
 				return it, err
 			}
 			it.Description = data
+		case "public":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("public"))
+			data, err := ec.unmarshalOBoolean2ᚖbool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Public = data
 		case "collaborators":
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("collaborators"))
 			data, err := ec.unmarshalOID2ᚕstringᚄ(ctx, v)
@@ -5852,7 +5859,7 @@ func (ec *executionContext) unmarshalInputNewProject(ctx context.Context, obj in
 			it.Collaborators = data
 		case "skills_needed":
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("skills_needed"))
-			data, err := ec.unmarshalNString2ᚕstringᚄ(ctx, v)
+			data, err := ec.unmarshalOString2ᚕstringᚄ(ctx, v)
 			if err != nil {
 				return it, err
 			}
@@ -5932,7 +5939,7 @@ func (ec *executionContext) unmarshalInputUpdatedProject(ctx context.Context, ob
 		asMap[k] = v
 	}
 
-	fieldsInOrder := [...]string{"name", "description", "collaborators", "skills_needed"}
+	fieldsInOrder := [...]string{"name", "description", "public", "collaborators", "skills_needed"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
@@ -5953,6 +5960,13 @@ func (ec *executionContext) unmarshalInputUpdatedProject(ctx context.Context, ob
 				return it, err
 			}
 			it.Description = data
+		case "public":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("public"))
+			data, err := ec.unmarshalOBoolean2ᚖbool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Public = data
 		case "collaborators":
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("collaborators"))
 			data, err := ec.unmarshalOID2ᚕstringᚄ(ctx, v)

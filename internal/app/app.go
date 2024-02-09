@@ -19,20 +19,24 @@ type Application struct {
 
 func InitApp() context.CancelFunc {
 	jwtDone := make(chan bool)
+	dbCancel := make(chan context.CancelFunc)
 	godotenv.Load()
 	go func() {
 		jwt.InitJWT()
 		jwtDone <- true
 	}()
-	cancel := database.InitDB()
-	App = &Application{
-		Projects: &projects.ProjectModel{
-			C: database.Db.Collection("projects"),
-		},
-		Users: &users.UserModel{
-			C: database.Db.Collection("users"),
-		},
-	}
+	go func() {
+		cancel := database.InitDB()
+		App = &Application{
+			Projects: &projects.ProjectModel{
+				C: database.Db.Collection("projects"),
+			},
+			Users: &users.UserModel{
+				C: database.Db.Collection("users"),
+			},
+		}
+		dbCancel <- cancel
+	}()
 	<-jwtDone
-	return cancel
+	return <-dbCancel
 }

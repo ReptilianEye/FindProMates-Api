@@ -1,7 +1,7 @@
 package utils
 
 import (
-	"log"
+	"fmt"
 	"math/rand"
 	"slices"
 	"strconv"
@@ -16,12 +16,16 @@ type Set map[string]bool
 // The mapper function is used to generate unique keys for each element in the slice.
 // The resulting set is represented as a map[string]bool, where the keys are the mapped values
 // and the values are always true.
-func ToSet[E any](arr []E, mapper func(E) string) Set {
+func ToSet[E any](arr []E, mapper func(E) (string, error)) (Set, error) {
 	set := make(Set)
 	for _, v := range arr {
-		set[mapper(v)] = true
+		mapped, err := mapper(v)
+		if err != nil {
+			return nil, err
+		}
+		set[mapped] = true
 	}
-	return set
+	return set, nil
 }
 
 // ToSlice converts a set to a slice using a mapper function to transform each element.
@@ -29,19 +33,27 @@ func ToSet[E any](arr []E, mapper func(E) string) Set {
 // If any key in firstInOrder is not found in the set, the function will log a fatal error.
 // The mapper function is used to transform each key into the desired element type.
 // The function returns a slice containing the transformed elements.
-func ToSlice[E any](s Set, mapper func(string) E, firstInOrder ...string) []E {
+func ToSlice[E any](s Set, mapper func(string) (E, error), firstInOrder ...string) ([]E, error) {
 	slice := make([]E, 0, len(s))
 	for _, k := range firstInOrder {
 		if _, ok := s[k]; !ok {
-			log.Fatal("Key not found in set")
+			return nil, fmt.Errorf("key not found in set")
 		}
-		slice = append(slice, mapper(k))
+		mapped, err := mapper(k)
+		if err != nil {
+			return nil, err
+		}
+		slice = append(slice, mapped)
 		delete(s, k)
 	}
 	for k := range s {
-		slice = append(slice, mapper(k))
+		mapped, err := mapper(k)
+		if err != nil {
+			return nil, err
+		}
+		slice = append(slice, mapped)
 	}
-	return slice
+	return slice, nil
 }
 func (s Set) Add(keys ...string) {
 	for _, k := range keys {
@@ -83,9 +95,15 @@ func Identity[E any](e E) E {
 // and the mapperStringToE function is used to convert strings back to elements of type E.
 // The anchors parameter is an optional variadic parameter that specifies additional elements to include in the result.
 // The function returns a new slice of type []E with unique elements from both input slices and the anchors.
-func MergeSlices[E any](base []E, new []string, mapperEToString func(E) string, mapperStringToE func(string) E, anchors ...string) []E {
-	baseS := ToSet(base, mapperEToString)
-	newS := ToSet(new, Identity)
+func MergeSlices[E any](base []E, new []string, mapperEToString func(E) (string, error), mapperStringToE func(string) (E, error), anchors ...string) ([]E, error) {
+	baseS, err := ToSet(base, mapperEToString)
+	if err != nil {
+		return nil, err
+	}
+	newS, err := ToSet(new, func(v string) (string, error) { return v, nil })
+	if err != nil {
+		return nil, err
+	}
 	union := baseS.Union(newS)
 	union.Add(anchors...)
 	return ToSlice(union, mapperStringToE, anchors...)
@@ -133,11 +151,15 @@ func Ternary(condition bool, a, b any) any {
 	}
 	return b
 }
-func Elivis[E any](a *E, b E) E {
-	if a != nil {
-		return *a
+
+// Elivis is a utility function that returns the value of v if it is not nil,
+// otherwise it returns the value of 'otherwise'.
+// It is a shorthand for the Elvis operator in other programming languages.
+func Elivis[E any](v *E, otherwise E) E {
+	if v != nil {
+		return *v
 	}
-	return b
+	return otherwise
 }
 
 func Keys[K comparable, V any](m map[K]V) []K {

@@ -29,8 +29,8 @@ const (
 var ctx = context.TODO()
 
 // All returns all users from the MongoDB collection.
-func (m *UserModel) All() ([]User, error) {
-	users := []User{}
+func (m *UserModel) All() ([]*User, error) {
+	users := []*User{}
 
 	cursor, err := m.C.Find(ctx, bson.M{})
 	if err != nil {

@@ -17,8 +17,6 @@ import (
 
 const defaultPort = "8080"
 
-type E any
-
 func main() {
 	cancel := app.InitApp()
 	defer cancel()
