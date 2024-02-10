@@ -1,4 +1,4 @@
-package collabrequest
+package collabrequests
 
 import (
 	"example/FindProMates-Api/internal/database/util_types"

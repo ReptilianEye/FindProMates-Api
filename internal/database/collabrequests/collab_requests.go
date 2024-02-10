@@ -1,4 +1,4 @@
-package collabrequest
+package collabrequests
 
 import (
 	"context"
