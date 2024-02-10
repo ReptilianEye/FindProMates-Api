@@ -156,6 +156,6 @@ type Mutation {
   deleteTask(id: ID!): Boolean!
 
   createCollabRequest(projectId: ID!, message: String!): CollabRequest!
-  updateCollabRequest(id: ID!, status: String!, feedback: String): CollabRequest!
+  answerCollabRequest(id: ID!, status: String!, feedback: String!): CollabRequest!
   deleteCollabRequest(id: ID!): Boolean!
 }

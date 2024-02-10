@@ -266,17 +266,48 @@ func (r *mutationResolver) DeleteTask(ctx context.Context, id string) (bool, err
 
 // CreateCollabRequest is the resolver for the createCollabRequest field.
 func (r *mutationResolver) CreateCollabRequest(ctx context.Context, projectID string, message string) (*model.CollabRequest, error) {
-	panic(fmt.Errorf("not implemented: CreateCollabRequest - createCollabRequest"))
+	user, err := resolvers.UserFromContext(ctx)
+	if err != nil {
+		return nil, err
+	}
+	project, err := resolvers.ProjectByStrId(projectID)
+	if err != nil {
+		return nil, err
+	}
+	if resolvers.CanMutateProject(project, user) {
+		return nil, fmt.Errorf("user is already a collaborator")
+	}
+	collabRequest := resolvers.MapToCollabRequestFromNew(project.ID, user.ID, message)
+	err = app.App.CollabRequests.Create(collabRequest)
+	if err != nil {
+		return nil, err
+	}
+	return resolvers.MapToQueryCollabRequest(collabRequest), nil
 }
 
-// UpdateCollabRequest is the resolver for the updateCollabRequest field.
-func (r *mutationResolver) UpdateCollabRequest(ctx context.Context, id string, status string, feedback *string) (*model.CollabRequest, error) {
-	panic(fmt.Errorf("not implemented: UpdateCollabRequest - updateCollabRequest"))
+// AnswerCollabRequest is the resolver for the answerCollabRequest field.
+func (r *mutationResolver) AnswerCollabRequest(ctx context.Context, id string, status string, feedback string) (*model.CollabRequest, error) {
+	panic(fmt.Errorf("not implemented: AnswerCollabRequest - answerCollabRequest"))
 }
 
 // DeleteCollabRequest is the resolver for the deleteCollabRequest field.
 func (r *mutationResolver) DeleteCollabRequest(ctx context.Context, id string) (bool, error) {
-	panic(fmt.Errorf("not implemented: DeleteCollabRequest - deleteCollabRequest"))
+	user, err := resolvers.UserFromContext(ctx)
+	if err != nil {
+		return false, err
+	}
+	collabRequest, err := resolvers.CollabRequestByStrId(id)
+	if err != nil {
+		return false, err
+	}
+	if collabRequest.RequesterID != user.ID {
+		return false, fmt.Errorf("access denied")
+	}
+	err = app.App.CollabRequests.Delete(collabRequest.ID)
+	if err != nil {
+		return false, err
+	}
+	return true, nil
 }
 
 // Users is the resolver for the users field.
@@ -512,3 +543,32 @@ func (r *Resolver) Query() QueryResolver { return &queryResolver{r} }
 
 type mutationResolver struct{ *Resolver }
 type queryResolver struct{ *Resolver }
+
+// !!! WARNING !!!
+// The code below was going to be deleted when updating resolvers. It has been copied here so you have
+// one last chance to move it out of harms way if you want. There are two reasons this happens:
+//   - When renaming or deleting a resolver the old code will be put in here. You can safely delete
+//     it when you're done.
+//   - You have helper methods in this file. Move them out to keep these resolver files clean.
+func (r *mutationResolver) UpdateCollabRequest(ctx context.Context, id string, status string, feedback string) (*model.CollabRequest, error) {
+	user, err := resolvers.UserFromContext(ctx)
+	if err != nil {
+		return nil, err
+	}
+	collabRequest, err := resolvers.CollabRequestByStrId(id)
+	if err != nil {
+		return nil, err
+	}
+	if !resolvers.CanMutateProject(resolvers.ProjectByObjId(collabRequest.ProjectID), user) {
+		return nil, fmt.Errorf("access denied")
+	}
+	err = resolvers.UpdateCollabRequest(collabRequest, status, feedback)
+	if err != nil {
+		return nil, err
+	}
+	err = app.App.CollabRequests.Update(collabRequest)
+	if err != nil {
+		return nil, err
+	}
+	return resolvers.MapToQueryCollabRequest(collabRequest), nil
+}

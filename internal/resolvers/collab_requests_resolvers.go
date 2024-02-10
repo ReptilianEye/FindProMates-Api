@@ -6,7 +6,9 @@ import (
 	"example/FindProMates-Api/internal/database/collabrequests"
 	"example/FindProMates-Api/internal/database/projects"
 	"example/FindProMates-Api/internal/database/users"
+	"example/FindProMates-Api/internal/database/util_types"
 	"example/FindProMates-Api/internal/pkg/utils"
+	"fmt"
 
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
@@ -45,4 +47,21 @@ func MapToQueryCollabRequest(collabRequest *collabrequests.CollabRequest) *model
 		Feedback:  &collabRequest.Feedback,
 		Status:    collabRequest.Status.String(),
 	}
+}
+func MapToCollabRequestFromNew(projectId primitive.ObjectID, requesterId primitive.ObjectID, message string) *collabrequests.CollabRequest {
+	return &collabrequests.CollabRequest{
+		ProjectID:   projectId,
+		RequesterID: requesterId,
+		Message:     message,
+		Status:      util_types.Pending,
+	}
+}
+func UpdateCollabRequest(collabReq *collabrequests.CollabRequest, status string, feedback string) error {
+	statusT := util_types.RequestStatus(status)
+	if !statusT.IsValid() {
+		return fmt.Errorf(`Invalid status: "%s"`, status)
+	}
+	collabReq.Status = statusT
+	collabReq.Feedback = feedback
+	return nil
 }

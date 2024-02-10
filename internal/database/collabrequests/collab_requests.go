@@ -70,3 +70,25 @@ func (m *CollabRequestModel) AllByProject(projectId primitive.ObjectID) ([]*Coll
 	}
 	return collabRequests, nil
 }
+func (m *CollabRequestModel) Create(collabRequest *CollabRequest) error {
+	_, err := m.C.InsertOne(ctx, collabRequest)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+func (m *CollabRequestModel) Update(collabRequest *CollabRequest) error {
+	_, err := m.C.ReplaceOne(ctx, bson.M{ID: collabRequest.ID}, collabRequest)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (m *CollabRequestModel) Delete(id primitive.ObjectID) error {
+	_, err := m.C.DeleteOne(ctx, bson.M{ID: id})
+	if err != nil {
+		return err
+	}
+	return nil
+}

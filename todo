@@ -1,11 +1,6 @@
 update bazy danych:
 
 querys/mutations:
-  - pobranie wszystkich tasków
-  - dodanie nowego taska
-  - usunięcie taska
-  - aktualizacja taska
-
   - propozycja projektu który ma najwięcej wspólnych skills
 
   - poprawienie autentykacji
