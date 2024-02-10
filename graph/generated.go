@@ -68,7 +68,7 @@ type ComplexityRoot struct {
 		CreateCollabRequest func(childComplexity int, projectID string, message string) int
 		CreateNote          func(childComplexity int, projectID string, note string) int
 		CreateProject       func(childComplexity int, newProject model.NewProject) int
-		CreateTask          func(childComplexity int, projectID string, task string, deadline *time.Time, priorityLevel string) int
+		CreateTask          func(childComplexity int, projectID string, newTask model.NewTask) int
 		CreateUser          func(childComplexity int, newUser model.NewUser) int
 		DeleteCollabRequest func(childComplexity int, id string) int
 		DeleteNote          func(childComplexity int, id string) int
@@ -79,16 +79,16 @@ type ComplexityRoot struct {
 		UpdateCollabRequest func(childComplexity int, id string, status string, feedback *string) int
 		UpdateNote          func(childComplexity int, id string, note string) int
 		UpdateProject       func(childComplexity int, id string, updatedProject model.UpdatedProject) int
-		UpdateTask          func(childComplexity int, id string, task *string, deadline *time.Time, priorityLevel *string, completionStatus *string) int
+		UpdateTask          func(childComplexity int, id string, updatedTask model.UpdatedTask) int
 		UpdateUser          func(childComplexity int, updatedUser model.UpdatedUser) int
 	}
 
 	Note struct {
-		AddedBy   func(childComplexity int) int
-		CreatedAt func(childComplexity int) int
-		ID        func(childComplexity int) int
-		Note      func(childComplexity int) int
-		Project   func(childComplexity int) int
+		AddedBy      func(childComplexity int) int
+		ID           func(childComplexity int) int
+		LastModified func(childComplexity int) int
+		Note         func(childComplexity int) int
+		Project      func(childComplexity int) int
 	}
 
 	Project struct {
@@ -123,9 +123,9 @@ type ComplexityRoot struct {
 		AddedBy          func(childComplexity int) int
 		AssignedTo       func(childComplexity int) int
 		CompletionStatus func(childComplexity int) int
-		CreatedAt        func(childComplexity int) int
 		Deadline         func(childComplexity int) int
 		ID               func(childComplexity int) int
+		LastModified     func(childComplexity int) int
 		PriorityLevel    func(childComplexity int) int
 		Project          func(childComplexity int) int
 		Task             func(childComplexity int) int
@@ -152,8 +152,8 @@ type MutationResolver interface {
 	CreateNote(ctx context.Context, projectID string, note string) (*model.Note, error)
 	UpdateNote(ctx context.Context, id string, note string) (*model.Note, error)
 	DeleteNote(ctx context.Context, id string) (bool, error)
-	CreateTask(ctx context.Context, projectID string, task string, deadline *time.Time, priorityLevel string) (*model.Task, error)
-	UpdateTask(ctx context.Context, id string, task *string, deadline *time.Time, priorityLevel *string, completionStatus *string) (*model.Task, error)
+	CreateTask(ctx context.Context, projectID string, newTask model.NewTask) (*model.Task, error)
+	UpdateTask(ctx context.Context, id string, updatedTask model.UpdatedTask) (*model.Task, error)
 	DeleteTask(ctx context.Context, id string) (bool, error)
 	CreateCollabRequest(ctx context.Context, projectID string, message string) (*model.CollabRequest, error)
 	UpdateCollabRequest(ctx context.Context, id string, status string, feedback *string) (*model.CollabRequest, error)
@@ -311,7 +311,7 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 			return 0, false
 		}
 
-		return e.complexity.Mutation.CreateTask(childComplexity, args["projectId"].(string), args["task"].(string), args["deadline"].(*time.Time), args["priorityLevel"].(string)), true
+		return e.complexity.Mutation.CreateTask(childComplexity, args["projectId"].(string), args["newTask"].(model.NewTask)), true
 
 	case "Mutation.createUser":
 		if e.complexity.Mutation.CreateUser == nil {
@@ -443,7 +443,7 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 			return 0, false
 		}
 
-		return e.complexity.Mutation.UpdateTask(childComplexity, args["id"].(string), args["task"].(*string), args["deadline"].(*time.Time), args["priorityLevel"].(*string), args["completionStatus"].(*string)), true
+		return e.complexity.Mutation.UpdateTask(childComplexity, args["id"].(string), args["updatedTask"].(model.UpdatedTask)), true
 
 	case "Mutation.updateUser":
 		if e.complexity.Mutation.UpdateUser == nil {
@@ -464,19 +464,19 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.Note.AddedBy(childComplexity), true
 
-	case "Note.createdAt":
-		if e.complexity.Note.CreatedAt == nil {
-			break
-		}
-
-		return e.complexity.Note.CreatedAt(childComplexity), true
-
 	case "Note.id":
 		if e.complexity.Note.ID == nil {
 			break
 		}
 
 		return e.complexity.Note.ID(childComplexity), true
+
+	case "Note.lastModified":
+		if e.complexity.Note.LastModified == nil {
+			break
+		}
+
+		return e.complexity.Note.LastModified(childComplexity), true
 
 	case "Note.note":
 		if e.complexity.Note.Note == nil {
@@ -712,13 +712,6 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.Task.CompletionStatus(childComplexity), true
 
-	case "Task.createdAt":
-		if e.complexity.Task.CreatedAt == nil {
-			break
-		}
-
-		return e.complexity.Task.CreatedAt(childComplexity), true
-
 	case "Task.deadline":
 		if e.complexity.Task.Deadline == nil {
 			break
@@ -732,6 +725,13 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.Task.ID(childComplexity), true
+
+	case "Task.lastModified":
+		if e.complexity.Task.LastModified == nil {
+			break
+		}
+
+		return e.complexity.Task.LastModified(childComplexity), true
 
 	case "Task.priorityLevel":
 		if e.complexity.Task.PriorityLevel == nil {
@@ -806,8 +806,10 @@ func (e *executableSchema) Exec(ctx context.Context) graphql.ResponseHandler {
 	inputUnmarshalMap := graphql.BuildUnmarshalerMap(
 		ec.unmarshalInputLogin,
 		ec.unmarshalInputNewProject,
+		ec.unmarshalInputNewTask,
 		ec.unmarshalInputNewUser,
 		ec.unmarshalInputUpdatedProject,
+		ec.unmarshalInputUpdatedTask,
 		ec.unmarshalInputUpdatedUser,
 	)
 	first := true
@@ -1000,33 +1002,15 @@ func (ec *executionContext) field_Mutation_createTask_args(ctx context.Context, 
 		}
 	}
 	args["projectId"] = arg0
-	var arg1 string
-	if tmp, ok := rawArgs["task"]; ok {
-		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("task"))
-		arg1, err = ec.unmarshalNString2string(ctx, tmp)
+	var arg1 model.NewTask
+	if tmp, ok := rawArgs["newTask"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("newTask"))
+		arg1, err = ec.unmarshalNNewTask2exampleᚋFindProMatesᚑApiᚋgraphᚋmodelᚐNewTask(ctx, tmp)
 		if err != nil {
 			return nil, err
 		}
 	}
-	args["task"] = arg1
-	var arg2 *time.Time
-	if tmp, ok := rawArgs["deadline"]; ok {
-		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("deadline"))
-		arg2, err = ec.unmarshalOTime2ᚖtimeᚐTime(ctx, tmp)
-		if err != nil {
-			return nil, err
-		}
-	}
-	args["deadline"] = arg2
-	var arg3 string
-	if tmp, ok := rawArgs["priorityLevel"]; ok {
-		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("priorityLevel"))
-		arg3, err = ec.unmarshalNString2string(ctx, tmp)
-		if err != nil {
-			return nil, err
-		}
-	}
-	args["priorityLevel"] = arg3
+	args["newTask"] = arg1
 	return args, nil
 }
 
@@ -1228,42 +1212,15 @@ func (ec *executionContext) field_Mutation_updateTask_args(ctx context.Context, 
 		}
 	}
 	args["id"] = arg0
-	var arg1 *string
-	if tmp, ok := rawArgs["task"]; ok {
-		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("task"))
-		arg1, err = ec.unmarshalOString2ᚖstring(ctx, tmp)
+	var arg1 model.UpdatedTask
+	if tmp, ok := rawArgs["updatedTask"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("updatedTask"))
+		arg1, err = ec.unmarshalNUpdatedTask2exampleᚋFindProMatesᚑApiᚋgraphᚋmodelᚐUpdatedTask(ctx, tmp)
 		if err != nil {
 			return nil, err
 		}
 	}
-	args["task"] = arg1
-	var arg2 *time.Time
-	if tmp, ok := rawArgs["deadline"]; ok {
-		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("deadline"))
-		arg2, err = ec.unmarshalOTime2ᚖtimeᚐTime(ctx, tmp)
-		if err != nil {
-			return nil, err
-		}
-	}
-	args["deadline"] = arg2
-	var arg3 *string
-	if tmp, ok := rawArgs["priorityLevel"]; ok {
-		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("priorityLevel"))
-		arg3, err = ec.unmarshalOString2ᚖstring(ctx, tmp)
-		if err != nil {
-			return nil, err
-		}
-	}
-	args["priorityLevel"] = arg3
-	var arg4 *string
-	if tmp, ok := rawArgs["completionStatus"]; ok {
-		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("completionStatus"))
-		arg4, err = ec.unmarshalOString2ᚖstring(ctx, tmp)
-		if err != nil {
-			return nil, err
-		}
-	}
-	args["completionStatus"] = arg4
+	args["updatedTask"] = arg1
 	return args, nil
 }
 
@@ -2492,8 +2449,8 @@ func (ec *executionContext) fieldContext_Mutation_createNote(ctx context.Context
 				return ec.fieldContext_Note_project(ctx, field)
 			case "addedBy":
 				return ec.fieldContext_Note_addedBy(ctx, field)
-			case "createdAt":
-				return ec.fieldContext_Note_createdAt(ctx, field)
+			case "lastModified":
+				return ec.fieldContext_Note_lastModified(ctx, field)
 			case "note":
 				return ec.fieldContext_Note_note(ctx, field)
 			}
@@ -2559,8 +2516,8 @@ func (ec *executionContext) fieldContext_Mutation_updateNote(ctx context.Context
 				return ec.fieldContext_Note_project(ctx, field)
 			case "addedBy":
 				return ec.fieldContext_Note_addedBy(ctx, field)
-			case "createdAt":
-				return ec.fieldContext_Note_createdAt(ctx, field)
+			case "lastModified":
+				return ec.fieldContext_Note_lastModified(ctx, field)
 			case "note":
 				return ec.fieldContext_Note_note(ctx, field)
 			}
@@ -2650,7 +2607,7 @@ func (ec *executionContext) _Mutation_createTask(ctx context.Context, field grap
 	}()
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Mutation().CreateTask(rctx, fc.Args["projectId"].(string), fc.Args["task"].(string), fc.Args["deadline"].(*time.Time), fc.Args["priorityLevel"].(string))
+		return ec.resolvers.Mutation().CreateTask(rctx, fc.Args["projectId"].(string), fc.Args["newTask"].(model.NewTask))
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -2685,8 +2642,8 @@ func (ec *executionContext) fieldContext_Mutation_createTask(ctx context.Context
 				return ec.fieldContext_Task_assignedTo(ctx, field)
 			case "task":
 				return ec.fieldContext_Task_task(ctx, field)
-			case "createdAt":
-				return ec.fieldContext_Task_createdAt(ctx, field)
+			case "lastModified":
+				return ec.fieldContext_Task_lastModified(ctx, field)
 			case "deadline":
 				return ec.fieldContext_Task_deadline(ctx, field)
 			case "priorityLevel":
@@ -2725,7 +2682,7 @@ func (ec *executionContext) _Mutation_updateTask(ctx context.Context, field grap
 	}()
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Mutation().UpdateTask(rctx, fc.Args["id"].(string), fc.Args["task"].(*string), fc.Args["deadline"].(*time.Time), fc.Args["priorityLevel"].(*string), fc.Args["completionStatus"].(*string))
+		return ec.resolvers.Mutation().UpdateTask(rctx, fc.Args["id"].(string), fc.Args["updatedTask"].(model.UpdatedTask))
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -2760,8 +2717,8 @@ func (ec *executionContext) fieldContext_Mutation_updateTask(ctx context.Context
 				return ec.fieldContext_Task_assignedTo(ctx, field)
 			case "task":
 				return ec.fieldContext_Task_task(ctx, field)
-			case "createdAt":
-				return ec.fieldContext_Task_createdAt(ctx, field)
+			case "lastModified":
+				return ec.fieldContext_Task_lastModified(ctx, field)
 			case "deadline":
 				return ec.fieldContext_Task_deadline(ctx, field)
 			case "priorityLevel":
@@ -3202,8 +3159,8 @@ func (ec *executionContext) fieldContext_Note_addedBy(ctx context.Context, field
 	return fc, nil
 }
 
-func (ec *executionContext) _Note_createdAt(ctx context.Context, field graphql.CollectedField, obj *model.Note) (ret graphql.Marshaler) {
-	fc, err := ec.fieldContext_Note_createdAt(ctx, field)
+func (ec *executionContext) _Note_lastModified(ctx context.Context, field graphql.CollectedField, obj *model.Note) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Note_lastModified(ctx, field)
 	if err != nil {
 		return graphql.Null
 	}
@@ -3216,7 +3173,7 @@ func (ec *executionContext) _Note_createdAt(ctx context.Context, field graphql.C
 	}()
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return obj.CreatedAt, nil
+		return obj.LastModified, nil
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -3233,7 +3190,7 @@ func (ec *executionContext) _Note_createdAt(ctx context.Context, field graphql.C
 	return ec.marshalNTime2timeᚐTime(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) fieldContext_Note_createdAt(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_Note_lastModified(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "Note",
 		Field:      field,
@@ -4095,8 +4052,8 @@ func (ec *executionContext) fieldContext_Query_notesByProject(ctx context.Contex
 				return ec.fieldContext_Note_project(ctx, field)
 			case "addedBy":
 				return ec.fieldContext_Note_addedBy(ctx, field)
-			case "createdAt":
-				return ec.fieldContext_Note_createdAt(ctx, field)
+			case "lastModified":
+				return ec.fieldContext_Note_lastModified(ctx, field)
 			case "note":
 				return ec.fieldContext_Note_note(ctx, field)
 			}
@@ -4162,8 +4119,8 @@ func (ec *executionContext) fieldContext_Query_note(ctx context.Context, field g
 				return ec.fieldContext_Note_project(ctx, field)
 			case "addedBy":
 				return ec.fieldContext_Note_addedBy(ctx, field)
-			case "createdAt":
-				return ec.fieldContext_Note_createdAt(ctx, field)
+			case "lastModified":
+				return ec.fieldContext_Note_lastModified(ctx, field)
 			case "note":
 				return ec.fieldContext_Note_note(ctx, field)
 			}
@@ -4233,8 +4190,8 @@ func (ec *executionContext) fieldContext_Query_tasks(ctx context.Context, field 
 				return ec.fieldContext_Task_assignedTo(ctx, field)
 			case "task":
 				return ec.fieldContext_Task_task(ctx, field)
-			case "createdAt":
-				return ec.fieldContext_Task_createdAt(ctx, field)
+			case "lastModified":
+				return ec.fieldContext_Task_lastModified(ctx, field)
 			case "deadline":
 				return ec.fieldContext_Task_deadline(ctx, field)
 			case "priorityLevel":
@@ -4297,8 +4254,8 @@ func (ec *executionContext) fieldContext_Query_taskByProject(ctx context.Context
 				return ec.fieldContext_Task_assignedTo(ctx, field)
 			case "task":
 				return ec.fieldContext_Task_task(ctx, field)
-			case "createdAt":
-				return ec.fieldContext_Task_createdAt(ctx, field)
+			case "lastModified":
+				return ec.fieldContext_Task_lastModified(ctx, field)
 			case "deadline":
 				return ec.fieldContext_Task_deadline(ctx, field)
 			case "priorityLevel":
@@ -4372,8 +4329,8 @@ func (ec *executionContext) fieldContext_Query_task(ctx context.Context, field g
 				return ec.fieldContext_Task_assignedTo(ctx, field)
 			case "task":
 				return ec.fieldContext_Task_task(ctx, field)
-			case "createdAt":
-				return ec.fieldContext_Task_createdAt(ctx, field)
+			case "lastModified":
+				return ec.fieldContext_Task_lastModified(ctx, field)
 			case "deadline":
 				return ec.fieldContext_Task_deadline(ctx, field)
 			case "priorityLevel":
@@ -4992,8 +4949,8 @@ func (ec *executionContext) fieldContext_Task_task(ctx context.Context, field gr
 	return fc, nil
 }
 
-func (ec *executionContext) _Task_createdAt(ctx context.Context, field graphql.CollectedField, obj *model.Task) (ret graphql.Marshaler) {
-	fc, err := ec.fieldContext_Task_createdAt(ctx, field)
+func (ec *executionContext) _Task_lastModified(ctx context.Context, field graphql.CollectedField, obj *model.Task) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Task_lastModified(ctx, field)
 	if err != nil {
 		return graphql.Null
 	}
@@ -5006,7 +4963,7 @@ func (ec *executionContext) _Task_createdAt(ctx context.Context, field graphql.C
 	}()
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return obj.CreatedAt, nil
+		return obj.LastModified, nil
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -5023,7 +4980,7 @@ func (ec *executionContext) _Task_createdAt(ctx context.Context, field graphql.C
 	return ec.marshalNTime2timeᚐTime(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) fieldContext_Task_createdAt(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_Task_lastModified(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "Task",
 		Field:      field,
@@ -7298,6 +7255,54 @@ func (ec *executionContext) unmarshalInputNewProject(ctx context.Context, obj in
 	return it, nil
 }
 
+func (ec *executionContext) unmarshalInputNewTask(ctx context.Context, obj interface{}) (model.NewTask, error) {
+	var it model.NewTask
+	asMap := map[string]interface{}{}
+	for k, v := range obj.(map[string]interface{}) {
+		asMap[k] = v
+	}
+
+	fieldsInOrder := [...]string{"task", "assignedTo", "deadline", "priorityLevel"}
+	for _, k := range fieldsInOrder {
+		v, ok := asMap[k]
+		if !ok {
+			continue
+		}
+		switch k {
+		case "task":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("task"))
+			data, err := ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Task = data
+		case "assignedTo":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("assignedTo"))
+			data, err := ec.unmarshalOID2ᚕstringᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.AssignedTo = data
+		case "deadline":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("deadline"))
+			data, err := ec.unmarshalOTime2ᚖtimeᚐTime(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Deadline = data
+		case "priorityLevel":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("priorityLevel"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.PriorityLevel = data
+		}
+	}
+
+	return it, nil
+}
+
 func (ec *executionContext) unmarshalInputNewUser(ctx context.Context, obj interface{}) (model.NewUser, error) {
 	var it model.NewUser
 	asMap := map[string]interface{}{}
@@ -7416,6 +7421,61 @@ func (ec *executionContext) unmarshalInputUpdatedProject(ctx context.Context, ob
 				return it, err
 			}
 			it.SkillsNeeded = data
+		}
+	}
+
+	return it, nil
+}
+
+func (ec *executionContext) unmarshalInputUpdatedTask(ctx context.Context, obj interface{}) (model.UpdatedTask, error) {
+	var it model.UpdatedTask
+	asMap := map[string]interface{}{}
+	for k, v := range obj.(map[string]interface{}) {
+		asMap[k] = v
+	}
+
+	fieldsInOrder := [...]string{"task", "assignedTo", "deadline", "priorityLevel", "completionStatus"}
+	for _, k := range fieldsInOrder {
+		v, ok := asMap[k]
+		if !ok {
+			continue
+		}
+		switch k {
+		case "task":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("task"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Task = data
+		case "assignedTo":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("assignedTo"))
+			data, err := ec.unmarshalOID2ᚕstringᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.AssignedTo = data
+		case "deadline":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("deadline"))
+			data, err := ec.unmarshalOTime2ᚖtimeᚐTime(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Deadline = data
+		case "priorityLevel":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("priorityLevel"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.PriorityLevel = data
+		case "completionStatus":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("completionStatus"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.CompletionStatus = data
 		}
 	}
 
@@ -7785,8 +7845,8 @@ func (ec *executionContext) _Note(ctx context.Context, sel ast.SelectionSet, obj
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
-		case "createdAt":
-			out.Values[i] = ec._Note_createdAt(ctx, field, obj)
+		case "lastModified":
+			out.Values[i] = ec._Note_lastModified(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
@@ -8280,8 +8340,8 @@ func (ec *executionContext) _Task(ctx context.Context, sel ast.SelectionSet, obj
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
-		case "createdAt":
-			out.Values[i] = ec._Task_createdAt(ctx, field, obj)
+		case "lastModified":
+			out.Values[i] = ec._Task_lastModified(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
@@ -8822,6 +8882,11 @@ func (ec *executionContext) unmarshalNNewProject2exampleᚋFindProMatesᚑApiᚋ
 	return res, graphql.ErrorOnPath(ctx, err)
 }
 
+func (ec *executionContext) unmarshalNNewTask2exampleᚋFindProMatesᚑApiᚋgraphᚋmodelᚐNewTask(ctx context.Context, v interface{}) (model.NewTask, error) {
+	res, err := ec.unmarshalInputNewTask(ctx, v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
 func (ec *executionContext) unmarshalNNewUser2exampleᚋFindProMatesᚑApiᚋgraphᚋmodelᚐNewUser(ctx context.Context, v interface{}) (model.NewUser, error) {
 	res, err := ec.unmarshalInputNewUser(ctx, v)
 	return res, graphql.ErrorOnPath(ctx, err)
@@ -9065,6 +9130,11 @@ func (ec *executionContext) marshalNTime2timeᚐTime(ctx context.Context, sel as
 
 func (ec *executionContext) unmarshalNUpdatedProject2exampleᚋFindProMatesᚑApiᚋgraphᚋmodelᚐUpdatedProject(ctx context.Context, v interface{}) (model.UpdatedProject, error) {
 	res, err := ec.unmarshalInputUpdatedProject(ctx, v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) unmarshalNUpdatedTask2exampleᚋFindProMatesᚑApiᚋgraphᚋmodelᚐUpdatedTask(ctx context.Context, v interface{}) (model.UpdatedTask, error) {
+	res, err := ec.unmarshalInputUpdatedTask(ctx, v)
 	return res, graphql.ErrorOnPath(ctx, err)
 }
 

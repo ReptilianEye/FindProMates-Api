@@ -62,3 +62,14 @@ func (m *TaskModel) AllByProjectId(projectId primitive.ObjectID) ([]*Task, error
 	}
 	return tasks, nil
 }
+
+func (m *TaskModel) Create(task *Task) (*mongo.InsertOneResult, error) {
+	return m.C.InsertOne(ctx, task)
+}
+
+func (m *TaskModel) Update(task *Task) (*mongo.UpdateResult, error) {
+	return m.C.UpdateOne(ctx, bson.M{Id: task.ID}, task)
+}
+func (m *TaskModel) Delete(id primitive.ObjectID) (*mongo.DeleteResult, error) {
+	return m.C.DeleteOne(ctx, bson.M{Id: id})
+}

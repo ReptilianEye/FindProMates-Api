@@ -72,7 +72,7 @@ func Authenticate(username, email *string, password string) (*users.User, error)
 	}
 	return user, nil
 }
-func UserFromContex(ctx context.Context) (*users.User, error) {
+func UserFromContext(ctx context.Context) (*users.User, error) {
 	userId := auth.ForContext(ctx)
 	if userId == "" {
 		return nil, fmt.Errorf("access denied")

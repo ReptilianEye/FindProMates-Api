@@ -7,8 +7,22 @@ import (
 	"strconv"
 	"strings"
 
+	"go.mongodb.org/mongo-driver/bson/primitive"
 	"golang.org/x/crypto/bcrypt"
 )
+
+func SafeIDToString(id primitive.ObjectID) (string, error) {
+	return id.Hex(), nil
+}
+
+// MONGODB utils
+func SafeStringToID(strId string) (primitive.ObjectID, error) {
+	id, err := primitive.ObjectIDFromHex(strId)
+	if err != nil {
+		return primitive.ObjectID{}, fmt.Errorf("provided id: '%s' is invalid: %v", strId, err)
+	}
+	return id, nil
+}
 
 type Set map[string]bool
 

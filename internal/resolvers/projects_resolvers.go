@@ -129,18 +129,7 @@ func PublicProjects() ([]*model.Project, error) {
 	return utils.MapTo(publicProjectsArr, MapToQueryProject), nil
 }
 func handleCollaborators(collabs []string, owner string, base ...primitive.ObjectID) ([]primitive.ObjectID, error) {
-	toString := func(id primitive.ObjectID) (string, error) {
-		return id.Hex(), nil
-	}
-	safePrimitive := func(strId string) (primitive.ObjectID, error) {
-		id, err := primitive.ObjectIDFromHex(strId)
-		if err != nil {
-			return primitive.ObjectID{}, fmt.Errorf("provided collaborator id: '%s' is invalid: %v", strId, err)
-		}
-		return id, nil
-
-	}
-	return utils.MergeSlices(base, collabs, toString, safePrimitive, owner)
+	return utils.MergeSlices(base, collabs, utils.SafeIDToString, utils.SafeStringToID, owner)
 }
 func handleSkillsNeeded(skills []string, base ...util_types.Skill) ([]util_types.Skill, error) {
 	toString := func(s util_types.Skill) (string, error) {

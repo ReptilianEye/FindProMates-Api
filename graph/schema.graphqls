@@ -67,7 +67,7 @@ type Note {
   id: ID!
   project: Project!
   addedBy: User!
-  createdAt: Time!
+  lastModified: Time!
   note: String!
 }
 
@@ -77,10 +77,23 @@ type Task {
   addedBy: User!
   assignedTo: [User!]
   task: String!
-  createdAt: Time!
+  lastModified: Time!
   deadline: Time
   priorityLevel: String!
   completionStatus: String!
+}
+input NewTask {
+  task: String!
+  assignedTo: [ID!]
+  deadline: Time
+  priorityLevel: String
+}
+input UpdatedTask {
+  task: String
+  assignedTo: [ID!]
+  deadline: Time
+  priorityLevel: String
+  completionStatus: String
 }
 type CollabRequest {
   id: ID!
@@ -138,14 +151,8 @@ type Mutation {
   updateNote(id: ID!, note: String!): Note!
   deleteNote(id: ID!): Boolean!
 
-  createTask(projectId: ID!, task: String!, deadline: Time, priorityLevel: String!): Task!
-  updateTask(
-    id: ID!
-    task: String
-    deadline: Time
-    priorityLevel: String
-    completionStatus: String
-  ): Task!
+  createTask(projectId: ID!, newTask: NewTask!): Task!
+  updateTask(id: ID!, updatedTask: UpdatedTask!): Task!
   deleteTask(id: ID!): Boolean!
 
   createCollabRequest(projectId: ID!, message: String!): CollabRequest!

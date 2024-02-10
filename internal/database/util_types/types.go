@@ -1,6 +1,9 @@
 package util_types
 
-import "log"
+import (
+	"fmt"
+	"log"
+)
 
 // types not stored in the database
 
@@ -19,6 +22,17 @@ func (p PriorityLevel) String() string {
 	}
 	log.Fatal("Invalid Priority Level")
 	return ""
+}
+func PriorityLevelFromString(s string) (PriorityLevel, error) {
+	switch s {
+	case "Low":
+		return Low, nil
+	case "Medium":
+		return Medium, nil
+	case "High":
+		return High, nil
+	}
+	return PriorityLevel{}, fmt.Errorf("Invalid Priority Level")
 }
 
 var Low = PriorityLevel{priority: 1}

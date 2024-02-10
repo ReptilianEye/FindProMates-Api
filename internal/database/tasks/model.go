@@ -15,7 +15,7 @@ type Task struct {
 	AddedBy          primitive.ObjectID          `bson:"added_by,omitempty"`
 	AssignedTo       []primitive.ObjectID        `bson:"assigned_to,omitempty"`
 	Task             string                      `bson:"task,omitempty"`
-	CreatedAt        time.Time                   `bson:"created_at,omitempty"`
+	LastModified     time.Time                   `bson:"last_modified,omitempty"`
 	Deadline         time.Time                   `bson:"deadline"`
 	PriorityLevel    util_types.PriorityLevel    `bson:"priority_level,omitempty"`
 	CompletionStatus util_types.CompletionStatus `bson:"completion_status,omitempty"`

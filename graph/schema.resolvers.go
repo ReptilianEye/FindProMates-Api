@@ -14,7 +14,6 @@ import (
 	"example/FindProMates-Api/internal/resolvers"
 	"fmt"
 	"sync"
-	"time"
 )
 
 // Login is the resolver for the login field.
@@ -55,7 +54,7 @@ func (r *mutationResolver) CreateUser(ctx context.Context, newUser model.NewUser
 
 // UpdateUser is the resolver for the updateUser field.
 func (r *mutationResolver) UpdateUser(ctx context.Context, updatedUser model.UpdatedUser) (*model.User, error) {
-	user, err := resolvers.UserFromContex(ctx)
+	user, err := resolvers.UserFromContext(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -76,7 +75,7 @@ func (r *mutationResolver) UpdateUser(ctx context.Context, updatedUser model.Upd
 
 // CreateProject is the resolver for the createProject field.
 func (r *mutationResolver) CreateProject(ctx context.Context, newProject model.NewProject) (*model.Project, error) {
-	owner, err := resolvers.UserFromContex(ctx)
+	owner, err := resolvers.UserFromContext(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -93,7 +92,7 @@ func (r *mutationResolver) CreateProject(ctx context.Context, newProject model.N
 
 // UpdateProject is the resolver for the updateProject field.
 func (r *mutationResolver) UpdateProject(ctx context.Context, id string, updatedProject model.UpdatedProject) (*model.Project, error) {
-	user, err := resolvers.UserFromContex(ctx)
+	user, err := resolvers.UserFromContext(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -117,7 +116,7 @@ func (r *mutationResolver) UpdateProject(ctx context.Context, id string, updated
 
 // DeleteProject is the resolver for the deleteProject field.
 func (r *mutationResolver) DeleteProject(ctx context.Context, id string) (bool, error) {
-	user, err := resolvers.UserFromContex(ctx)
+	user, err := resolvers.UserFromContext(ctx)
 	if err != nil {
 		return false, err
 	}
@@ -137,32 +136,132 @@ func (r *mutationResolver) DeleteProject(ctx context.Context, id string) (bool, 
 
 // CreateNote is the resolver for the createNote field.
 func (r *mutationResolver) CreateNote(ctx context.Context, projectID string, note string) (*model.Note, error) {
-	panic(fmt.Errorf("not implemented: CreateNote - createNote"))
+	user, err := resolvers.UserFromContext(ctx)
+	if err != nil {
+		return nil, err
+	}
+	project, err := resolvers.ProjectByStrId(projectID)
+	if err != nil {
+		return nil, err
+	}
+	if !resolvers.CanMutateProject(project, user) {
+		return nil, fmt.Errorf("access denied")
+	}
+	newNote := resolvers.MapToNoteFromNew(project.ID, user.ID, note)
+	_, err = app.App.Notes.Create(newNote)
+	if err != nil {
+		return nil, err
+	}
+	return resolvers.MapToQueryNote(newNote), nil
 }
 
 // UpdateNote is the resolver for the updateNote field.
 func (r *mutationResolver) UpdateNote(ctx context.Context, id string, note string) (*model.Note, error) {
-	panic(fmt.Errorf("not implemented: UpdateNote - updateNote"))
+	user, err := resolvers.UserFromContext(ctx)
+	if err != nil {
+		return nil, err
+	}
+	noteObj, err := resolvers.GetNoteByStrId(id)
+	if err != nil {
+		return nil, err
+	}
+	if user.ID != noteObj.AddedBy {
+		return nil, fmt.Errorf("access denied")
+	}
+	resolvers.UpdateNote(noteObj, note)
+	_, err = app.App.Notes.Update(noteObj)
+	if err != nil {
+		return nil, err
+	}
+	return resolvers.MapToQueryNote(noteObj), nil
 }
 
 // DeleteNote is the resolver for the deleteNote field.
 func (r *mutationResolver) DeleteNote(ctx context.Context, id string) (bool, error) {
-	panic(fmt.Errorf("not implemented: DeleteNote - deleteNote"))
+	user, err := resolvers.UserFromContext(ctx)
+	if err != nil {
+		return false, err
+	}
+	note, err := resolvers.GetNoteByStrId(id)
+	if err != nil {
+		return false, err
+	}
+	if !resolvers.CanMutateProject(resolvers.ProjectByObjId(note.ProjectID), user) {
+		return false, fmt.Errorf("access denied")
+	}
+	_, err = app.App.Notes.Delete(note.ID)
+	if err != nil {
+		return false, err
+	}
+	return true, nil
 }
 
 // CreateTask is the resolver for the createTask field.
-func (r *mutationResolver) CreateTask(ctx context.Context, projectID string, task string, deadline *time.Time, priorityLevel string) (*model.Task, error) {
-	panic(fmt.Errorf("not implemented: CreateTask - createTask"))
+func (r *mutationResolver) CreateTask(ctx context.Context, projectID string, newTask model.NewTask) (*model.Task, error) {
+	user, err := resolvers.UserFromContext(ctx)
+	if err != nil {
+		return nil, err
+	}
+	project, err := resolvers.ProjectByStrId(projectID)
+	if err != nil {
+		return nil, err
+	}
+	if !resolvers.CanMutateProject(project, user) {
+		return nil, fmt.Errorf("access denied")
+	}
+	newTaskObj, err := resolvers.MapToTaskFromNew(project.ID, user.ID, newTask)
+	if err != nil {
+		return nil, err
+	}
+	_, err = app.App.Tasks.Create(newTaskObj)
+	if err != nil {
+		return nil, err
+	}
+	return resolvers.MapToQueryTask(newTaskObj), nil
 }
 
 // UpdateTask is the resolver for the updateTask field.
-func (r *mutationResolver) UpdateTask(ctx context.Context, id string, task *string, deadline *time.Time, priorityLevel *string, completionStatus *string) (*model.Task, error) {
-	panic(fmt.Errorf("not implemented: UpdateTask - updateTask"))
+func (r *mutationResolver) UpdateTask(ctx context.Context, id string, updatedTask model.UpdatedTask) (*model.Task, error) {
+	user, err := resolvers.UserFromContext(ctx)
+	if err != nil {
+		return nil, err
+	}
+	task, err := resolvers.TaskByStrId(id)
+	if err != nil {
+		return nil, err
+	}
+	if !resolvers.CanMutateProject(resolvers.ProjectByObjId(task.ProjectID), user) {
+		return nil, fmt.Errorf("access denied")
+	}
+	err = resolvers.UpdateTask(task, updatedTask)
+	if err != nil {
+		return nil, err
+	}
+	_, err = app.App.Tasks.Update(task)
+	if err != nil {
+		return nil, err
+	}
+	return resolvers.MapToQueryTask(task), nil
 }
 
 // DeleteTask is the resolver for the deleteTask field.
 func (r *mutationResolver) DeleteTask(ctx context.Context, id string) (bool, error) {
-	panic(fmt.Errorf("not implemented: DeleteTask - deleteTask"))
+	user, err := resolvers.UserFromContext(ctx)
+	if err != nil {
+		return false, err
+	}
+	task, err := resolvers.TaskByStrId(id)
+	if err != nil {
+		return false, err
+	}
+	if !resolvers.CanMutateProject(resolvers.ProjectByObjId(task.ProjectID), user) {
+		return false, fmt.Errorf("access denied")
+	}
+	_, err = app.App.Tasks.Delete(task.ID)
+	if err != nil {
+		return false, err
+	}
+	return true, nil
 }
 
 // CreateCollabRequest is the resolver for the createCollabRequest field.
@@ -191,7 +290,7 @@ func (r *queryResolver) Users(ctx context.Context) ([]*model.User, error) {
 
 // Me is the resolver for the me field.
 func (r *queryResolver) Me(ctx context.Context) (*model.User, error) {
-	user, err := resolvers.UserFromContex(ctx)
+	user, err := resolvers.UserFromContext(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -223,7 +322,7 @@ func (r *queryResolver) Projects(ctx context.Context) (*model.AllProjects, error
 		}
 	}()
 	go func() {
-		user, err := resolvers.UserFromContex(ctx)
+		user, err := resolvers.UserFromContext(ctx)
 		if err != nil { //error here means user is not logged in so we can just return public projects
 			errors <- nil
 			errors <- nil
@@ -268,7 +367,7 @@ func (r *queryResolver) Projects(ctx context.Context) (*model.AllProjects, error
 
 // Project is the resolver for the project field.
 func (r *queryResolver) Project(ctx context.Context, id string) (*model.Project, error) {
-	user, err := resolvers.UserFromContex(ctx)
+	user, err := resolvers.UserFromContext(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -293,7 +392,7 @@ func (r *queryResolver) NotesByProject(ctx context.Context, id string) ([]*model
 	if err != nil {
 		return nil, err
 	}
-	user, err := resolvers.UserFromContex(ctx)
+	user, err := resolvers.UserFromContext(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -309,11 +408,11 @@ func (r *queryResolver) NotesByProject(ctx context.Context, id string) ([]*model
 
 // Note is the resolver for the note field.
 func (r *queryResolver) Note(ctx context.Context, id string) (*model.Note, error) {
-	user, err := resolvers.UserFromContex(ctx)
+	user, err := resolvers.UserFromContext(ctx)
 	if err != nil {
 		return nil, err
 	}
-	note, err := resolvers.GetNoteById(id)
+	note, err := resolvers.GetNoteByStrId(id)
 	if err != nil {
 		return nil, err
 	}
@@ -325,7 +424,7 @@ func (r *queryResolver) Note(ctx context.Context, id string) (*model.Note, error
 
 // Tasks is the resolver for the tasks field.
 func (r *queryResolver) Tasks(ctx context.Context) ([]*model.Task, error) {
-	user, err := resolvers.UserFromContex(ctx)
+	user, err := resolvers.UserFromContext(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -334,7 +433,7 @@ func (r *queryResolver) Tasks(ctx context.Context) ([]*model.Task, error) {
 
 // TaskByProject is the resolver for the taskByProject field.
 func (r *queryResolver) TaskByProject(ctx context.Context, id string) ([]*model.Task, error) {
-	user, err := resolvers.UserFromContex(ctx)
+	user, err := resolvers.UserFromContext(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -350,11 +449,11 @@ func (r *queryResolver) TaskByProject(ctx context.Context, id string) ([]*model.
 
 // Task is the resolver for the task field.
 func (r *queryResolver) Task(ctx context.Context, id string) (*model.Task, error) {
-	user, err := resolvers.UserFromContex(ctx)
+	user, err := resolvers.UserFromContext(ctx)
 	if err != nil {
 		return nil, err
 	}
-	task, err := resolvers.TaskById(id)
+	task, err := resolvers.TaskByStrId(id)
 	if err != nil {
 		return nil, err
 	}
@@ -366,7 +465,7 @@ func (r *queryResolver) Task(ctx context.Context, id string) (*model.Task, error
 
 // CollabRequests is the resolver for the collabRequests field.
 func (r *queryResolver) CollabRequests(ctx context.Context) ([]*model.CollabRequest, error) {
-	user, err := resolvers.UserFromContex(ctx)
+	user, err := resolvers.UserFromContext(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -375,7 +474,7 @@ func (r *queryResolver) CollabRequests(ctx context.Context) ([]*model.CollabRequ
 
 // CollabRequestsByProject is the resolver for the collabRequestsByProject field.
 func (r *queryResolver) CollabRequestsByProject(ctx context.Context, id string) ([]*model.CollabRequest, error) {
-	user, err := resolvers.UserFromContex(ctx)
+	user, err := resolvers.UserFromContext(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -391,7 +490,7 @@ func (r *queryResolver) CollabRequestsByProject(ctx context.Context, id string) 
 
 // CollabRequest is the resolver for the collabRequest field.
 func (r *queryResolver) CollabRequest(ctx context.Context, id string) (*model.CollabRequest, error) {
-	user, err := resolvers.UserFromContex(ctx)
+	user, err := resolvers.UserFromContext(ctx)
 	if err != nil {
 		return nil, err
 	}

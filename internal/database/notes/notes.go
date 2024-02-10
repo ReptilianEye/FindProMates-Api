@@ -17,7 +17,7 @@ const (
 	ProjectId   string = "project_id"
 	AddedBy     string = "added_by"
 	NoteContent string = "note"
-	CreatedAt   string = "created_at"
+	LastMod     string = "last_modified"
 )
 
 var ctx = context.TODO()
@@ -42,4 +42,15 @@ func (m *NoteModel) AllByProjectId(projectId primitive.ObjectID) ([]*Note, error
 		return nil, err
 	}
 	return notes, nil
+}
+
+func (m *NoteModel) Create(note *Note) (*mongo.InsertOneResult, error) {
+	return m.C.InsertOne(ctx, note)
+}
+
+func (m *NoteModel) Update(note *Note) (*mongo.UpdateResult, error) {
+	return m.C.UpdateOne(ctx, bson.M{Id: note.ID}, bson.M{"$set": note})
+}
+func (m *NoteModel) Delete(id primitive.ObjectID) (*mongo.DeleteResult, error) {
+	return m.C.DeleteOne(ctx, bson.M{Id: id})
 }

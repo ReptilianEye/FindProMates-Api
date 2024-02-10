@@ -39,6 +39,13 @@ type NewProject struct {
 	SkillsNeeded  []string `json:"skills_needed,omitempty"`
 }
 
+type NewTask struct {
+	Task          string     `json:"task"`
+	AssignedTo    []string   `json:"assignedTo,omitempty"`
+	Deadline      *time.Time `json:"deadline,omitempty"`
+	PriorityLevel *string    `json:"priorityLevel,omitempty"`
+}
+
 type NewUser struct {
 	FirstName string   `json:"firstName"`
 	LastName  string   `json:"lastName"`
@@ -49,11 +56,11 @@ type NewUser struct {
 }
 
 type Note struct {
-	ID        string    `json:"id"`
-	Project   *Project  `json:"project"`
-	AddedBy   *User     `json:"addedBy"`
-	CreatedAt time.Time `json:"createdAt"`
-	Note      string    `json:"note"`
+	ID           string    `json:"id"`
+	Project      *Project  `json:"project"`
+	AddedBy      *User     `json:"addedBy"`
+	LastModified time.Time `json:"lastModified"`
+	Note         string    `json:"note"`
 }
 
 type Project struct {
@@ -76,7 +83,7 @@ type Task struct {
 	AddedBy          *User      `json:"addedBy"`
 	AssignedTo       []*User    `json:"assignedTo,omitempty"`
 	Task             string     `json:"task"`
-	CreatedAt        time.Time  `json:"createdAt"`
+	LastModified     time.Time  `json:"lastModified"`
 	Deadline         *time.Time `json:"deadline,omitempty"`
 	PriorityLevel    string     `json:"priorityLevel"`
 	CompletionStatus string     `json:"completionStatus"`
@@ -89,6 +96,14 @@ type UpdatedProject struct {
 	CompletionStatus *string  `json:"completionStatus,omitempty"`
 	Collaborators    []string `json:"collaborators,omitempty"`
 	SkillsNeeded     []string `json:"skills_needed,omitempty"`
+}
+
+type UpdatedTask struct {
+	Task             *string    `json:"task,omitempty"`
+	AssignedTo       []string   `json:"assignedTo,omitempty"`
+	Deadline         *time.Time `json:"deadline,omitempty"`
+	PriorityLevel    *string    `json:"priorityLevel,omitempty"`
+	CompletionStatus *string    `json:"completionStatus,omitempty"`
 }
 
 type UpdatedUser struct {
