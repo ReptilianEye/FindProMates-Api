@@ -1,15 +1,11 @@
 update bazy danych:
-- dodanie kolekcji tasks
-- dodanie kolekcji notes
-
 
 querys/mutations:
-- pobranie wszystkich tasków
-- dodanie nowego taska
-- usunięcie taska
-- aktualizacja taska
+  - pobranie wszystkich tasków
+  - dodanie nowego taska
+  - usunięcie taska
+  - aktualizacja taska
 
-- propozycja projektu który ma najwięcej wspólnych skills
+  - propozycja projektu który ma najwięcej wspólnych skills
 
-- poprawienie autentykacji
-
+  - poprawienie autentykacji

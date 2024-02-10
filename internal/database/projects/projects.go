@@ -10,10 +10,14 @@ import (
 
 // keys for params map
 const (
-	Id            string = "_id"
-	Name          string = "name"
-	Owner         string = "owner"
-	Collaborators string = "collaborators"
+	ID               string = "_id"
+	Name             string = "name"
+	Owner            string = "owner"
+	Description      string = "description"
+	Public           string = "public"
+	Collaborators    string = "collaborators"
+	SkillsNeeded     string = "skills_needed"
+	CompletionStatus string = "completion_status"
 )
 
 type ProjectModel struct {
@@ -36,7 +40,7 @@ func (m *ProjectModel) All() ([]*Project, error) {
 }
 func (m *ProjectModel) FindById(id primitive.ObjectID) (*Project, error) {
 	var project Project
-	err := m.C.FindOne(ctx, bson.M{Id: id}).Decode(&project)
+	err := m.C.FindOne(ctx, bson.M{ID: id}).Decode(&project)
 	if err != nil {
 		return nil, err
 	}
@@ -80,9 +84,9 @@ func (m *ProjectModel) Create(project *Project) (*Project, error) {
 }
 
 func (m *ProjectModel) Update(id primitive.ObjectID, project *Project) (*mongo.UpdateResult, error) {
-	return m.C.ReplaceOne(context.TODO(), bson.M{Id: id}, project)
+	return m.C.ReplaceOne(context.TODO(), bson.M{ID: id}, project)
 }
 
 func (m *ProjectModel) Delete(id primitive.ObjectID) (*mongo.DeleteResult, error) {
-	return m.C.DeleteOne(context.TODO(), bson.M{Id: id})
+	return m.C.DeleteOne(context.TODO(), bson.M{ID: id})
 }

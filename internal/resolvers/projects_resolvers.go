@@ -56,10 +56,12 @@ func ProjectsCollaboratedByUser(user *users.User) ([]*model.Project, error) {
 
 func MapToQueryProject(project *projects.Project) *model.Project {
 	return &model.Project{
-		ID:          project.ID.Hex(),
-		Name:        project.Name,
-		Description: project.Description,
-		Owner:       MapToQueryUser(UserByObjId(project.Owner)),
+		ID:               project.ID.Hex(),
+		Name:             project.Name,
+		Description:      project.Description,
+		Owner:            MapToQueryUser(UserByObjId(project.Owner)),
+		Public:           project.Public,
+		CompletionStatus: project.CompletionStatus.String(),
 		Collaborators: utils.MapTo(project.Collaborators, func(collaborator primitive.ObjectID) *model.User {
 			return MapToQueryUser(UserByObjId(collaborator))
 		}),
@@ -80,27 +82,36 @@ func MapToProjectFromNew(newProject model.NewProject, ownerId primitive.ObjectID
 		return &projects.Project{}, err
 	}
 	return &projects.Project{
-		Name:          newProject.Name,
-		Description:   utils.Elivis(newProject.Description, ""),
-		Owner:         ownerId,
-		Public:        utils.Elivis(newProject.Public, false),
-		Collaborators: collaboratorsObj,
-		SkillsNeeded:  skillsNeededObj,
+		Owner:            ownerId,
+		Name:             newProject.Name,
+		Description:      utils.Elivis(newProject.Description, ""),
+		Public:           utils.Elivis(newProject.Public, false),
+		CompletionStatus: util_types.InProgress,
+		Collaborators:    collaboratorsObj,
+		SkillsNeeded:     skillsNeededObj,
 	}, nil
 }
-func UpdateProject(baseProject *projects.Project, project model.UpdatedProject) error {
-	baseProject.Name = utils.Elivis(project.Name, baseProject.Name)
-	baseProject.Description = utils.Elivis(project.Description, baseProject.Description)
-	baseProject.Public = utils.Elivis(project.Public, baseProject.Public)
-	if project.Collaborators != nil {
-		collabs, err := handleCollaborators(project.Collaborators, baseProject.Owner.Hex())
+func UpdateProject(baseProject *projects.Project, updatedProject model.UpdatedProject) error {
+	baseProject.Name = utils.Elivis(updatedProject.Name, baseProject.Name)
+	baseProject.Description = utils.Elivis(updatedProject.Description, baseProject.Description)
+	baseProject.Public = utils.Elivis(updatedProject.Public, baseProject.Public)
+	if updatedProject.CompletionStatus != nil {
+		status := util_types.CompletionStatus(*updatedProject.CompletionStatus)
+		if !status.IsValid() {
+			return fmt.Errorf("invalid completion status")
+		}
+		baseProject.CompletionStatus = status
+	}
+
+	if updatedProject.Collaborators != nil {
+		collabs, err := handleCollaborators(updatedProject.Collaborators, baseProject.Owner.Hex())
 		if err != nil {
 			return err
 		}
 		baseProject.Collaborators = collabs
 	}
-	if project.SkillsNeeded != nil {
-		skills, err := handleSkillsNeeded(project.SkillsNeeded, baseProject.SkillsNeeded...)
+	if updatedProject.SkillsNeeded != nil {
+		skills, err := handleSkillsNeeded(updatedProject.SkillsNeeded, baseProject.SkillsNeeded...)
 		if err != nil {
 			return err
 		}

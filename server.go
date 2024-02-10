@@ -18,6 +18,7 @@ import (
 const defaultPort = "8080"
 
 func main() {
+
 	cancel := app.InitApp()
 	defer cancel()
 	defer database.CloseDB()

@@ -14,6 +14,7 @@ import (
 	"example/FindProMates-Api/internal/resolvers"
 	"fmt"
 	"sync"
+	"time"
 )
 
 // Login is the resolver for the login field.
@@ -132,6 +133,36 @@ func (r *mutationResolver) DeleteProject(ctx context.Context, id string) (bool, 
 		return false, err
 	}
 	return true, nil
+}
+
+// CreateNote is the resolver for the createNote field.
+func (r *mutationResolver) CreateNote(ctx context.Context, projectID string, note string) (*model.Note, error) {
+	panic(fmt.Errorf("not implemented: CreateNote - createNote"))
+}
+
+// UpdateNote is the resolver for the updateNote field.
+func (r *mutationResolver) UpdateNote(ctx context.Context, id string, note string) (*model.Note, error) {
+	panic(fmt.Errorf("not implemented: UpdateNote - updateNote"))
+}
+
+// DeleteNote is the resolver for the deleteNote field.
+func (r *mutationResolver) DeleteNote(ctx context.Context, id string) (bool, error) {
+	panic(fmt.Errorf("not implemented: DeleteNote - deleteNote"))
+}
+
+// CreateTask is the resolver for the createTask field.
+func (r *mutationResolver) CreateTask(ctx context.Context, projectID string, task string, deadline *time.Time, priorityLevel string) (*model.Task, error) {
+	panic(fmt.Errorf("not implemented: CreateTask - createTask"))
+}
+
+// UpdateTask is the resolver for the updateTask field.
+func (r *mutationResolver) UpdateTask(ctx context.Context, id string, task *string, deadline *time.Time, priorityLevel *string, completionStatus *string) (*model.Task, error) {
+	panic(fmt.Errorf("not implemented: UpdateTask - updateTask"))
+}
+
+// DeleteTask is the resolver for the deleteTask field.
+func (r *mutationResolver) DeleteTask(ctx context.Context, id string) (bool, error) {
+	panic(fmt.Errorf("not implemented: DeleteTask - deleteTask"))
 }
 
 // Users is the resolver for the users field.
@@ -316,6 +347,47 @@ func (r *queryResolver) Task(ctx context.Context, id string) (*model.Task, error
 		return nil, fmt.Errorf("access denied")
 	}
 	return resolvers.MapToQueryTask(task), nil
+}
+
+// CollabRequests is the resolver for the collabRequests field.
+func (r *queryResolver) CollabRequests(ctx context.Context) ([]*model.CollabRequest, error) {
+	user, err := resolvers.UserFromContex(ctx)
+	if err != nil {
+		return nil, err
+	}
+	return resolvers.CollabRequestsByUser(user)
+}
+
+// CollabRequestsByProject is the resolver for the collabRequestsByProject field.
+func (r *queryResolver) CollabRequestsByProject(ctx context.Context, id string) ([]*model.CollabRequest, error) {
+	user, err := resolvers.UserFromContex(ctx)
+	if err != nil {
+		return nil, err
+	}
+	project, err := resolvers.ProjectByStrId(id)
+	if err != nil {
+		return nil, err
+	}
+	if !resolvers.CanMutateProject(project, user) {
+		return nil, fmt.Errorf("access denied")
+	}
+	return resolvers.CollabRequestsByProject(project)
+}
+
+// CollabRequest is the resolver for the collabRequest field.
+func (r *queryResolver) CollabRequest(ctx context.Context, id string) (*model.CollabRequest, error) {
+	user, err := resolvers.UserFromContex(ctx)
+	if err != nil {
+		return nil, err
+	}
+	collabRequest, err := resolvers.CollabRequestByStrId(id)
+	if err != nil {
+		return nil, err
+	}
+	if !resolvers.CanMutateProject(resolvers.ProjectByObjId(collabRequest.ProjectID), user) {
+		return nil, fmt.Errorf("access denied")
+	}
+	return resolvers.MapToQueryCollabRequest(collabRequest), nil
 }
 
 // Mutation returns MutationResolver implementation.

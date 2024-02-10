@@ -57,13 +57,14 @@ type Note struct {
 }
 
 type Project struct {
-	ID            string   `json:"id"`
-	Name          string   `json:"name"`
-	Description   string   `json:"description"`
-	Owner         *User    `json:"owner"`
-	Public        bool     `json:"public"`
-	Collaborators []*User  `json:"collaborators"`
-	SkillsNeeded  []string `json:"skills_needed"`
+	ID               string   `json:"id"`
+	Name             string   `json:"name"`
+	Description      string   `json:"description"`
+	Owner            *User    `json:"owner"`
+	Public           bool     `json:"public"`
+	CompletionStatus string   `json:"completionStatus"`
+	Collaborators    []*User  `json:"collaborators"`
+	SkillsNeeded     []string `json:"skills_needed"`
 }
 
 type Query struct {
@@ -82,11 +83,12 @@ type Task struct {
 }
 
 type UpdatedProject struct {
-	Name          *string  `json:"name,omitempty"`
-	Description   *string  `json:"description,omitempty"`
-	Public        *bool    `json:"public,omitempty"`
-	Collaborators []string `json:"collaborators,omitempty"`
-	SkillsNeeded  []string `json:"skills_needed,omitempty"`
+	Name             *string  `json:"name,omitempty"`
+	Description      *string  `json:"description,omitempty"`
+	Public           *bool    `json:"public,omitempty"`
+	CompletionStatus *string  `json:"completionStatus,omitempty"`
+	Collaborators    []string `json:"collaborators,omitempty"`
+	SkillsNeeded     []string `json:"skills_needed,omitempty"`
 }
 
 type UpdatedUser struct {

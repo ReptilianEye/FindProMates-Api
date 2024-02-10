@@ -13,16 +13,56 @@ type User {
   skills: [String!]!
 }
 
+input NewUser {
+  firstName: String!
+  lastName: String!
+  username: String
+  password: String!
+  email: String!
+  skills: [String!]!
+}
+input UpdatedUser {
+  firstName: String
+  lastName: String
+  username: String
+  old_password: String
+  new_password: String
+  email: String
+  skills: [String!]
+}
 type Project {
   id: ID!
   name: String!
   description: String!
   owner: User!
   public: Boolean!
+  completionStatus: String!
   collaborators: [User!]!
   skills_needed: [String!]!
 }
 
+# nulls when not logged in
+type AllProjects {
+  public: [Project!]!
+  owned: [Project!]
+  collaborated: [Project!]
+}
+input NewProject {
+  name: String!
+  description: String
+  public: Boolean
+  collaborators: [ID!]
+  skills_needed: [String!]
+}
+
+input UpdatedProject {
+  name: String
+  description: String
+  public: Boolean
+  completionStatus: String
+  collaborators: [ID!]
+  skills_needed: [String!]
+}
 type Note {
   id: ID!
   project: Project!
@@ -54,47 +94,6 @@ type CollabRequest {
   status: String!
 }
 
-# nulls when not logged in
-type AllProjects {
-  public: [Project!]!
-  owned: [Project!]
-  collaborated: [Project!]
-}
-
-input NewUser {
-  firstName: String!
-  lastName: String!
-  username: String
-  password: String!
-  email: String!
-  skills: [String!]!
-}
-input UpdatedUser {
-  firstName: String
-  lastName: String
-  username: String
-  old_password: String
-  new_password: String
-  email: String
-  skills: [String!]
-}
-
-input NewProject {
-  name: String!
-  description: String
-  public: Boolean
-  collaborators: [ID!]
-  skills_needed: [String!]
-}
-
-input UpdatedProject {
-  name: String
-  description: String
-  public: Boolean
-  collaborators: [ID!]
-  skills_needed: [String!]
-}
-
 input Login {
   email: String
   username: String
@@ -117,6 +116,10 @@ type Query {
   tasks: [Task!]! # get all tasks I was assigned to
   taskByProject(id: ID!): [Task!]! # get all tasks by project id
   task(id: ID!): Task! # get task by id
+  # collab requests
+  collabRequests: [CollabRequest!]! # get all my collab requests
+  collabRequestsByProject(id: ID!): [CollabRequest!]! # get all collab requests by project id
+  collabRequest(id: ID!): CollabRequest! # get collab request by id
 }
 
 type Mutation {
@@ -130,4 +133,22 @@ type Mutation {
   createProject(newProject: NewProject!): Project!
   updateProject(id: ID!, updatedProject: UpdatedProject!): Project!
   deleteProject(id: ID!): Boolean!
+
+  createNote(projectId: ID!, note: String!): Note!
+  updateNote(id: ID!, note: String!): Note!
+  deleteNote(id: ID!): Boolean!
+
+  createTask(projectId: ID!, task: String!, deadline: Time, priorityLevel: String!): Task!
+  updateTask(
+    id: ID!
+    task: String
+    deadline: Time
+    priorityLevel: String
+    completionStatus: String
+  ): Task!
+  deleteTask(id: ID!): Boolean!
+
+  createCollabRequest(projectId: ID!, message: String!): CollabRequest!
+  updateCollabRequest(id: ID!, status: String!, feedback: String): CollabRequest!
+  deleteCollabRequest(id: ID!): Boolean!
 }

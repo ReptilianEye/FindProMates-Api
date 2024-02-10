@@ -19,11 +19,12 @@ type UserModel struct {
 
 // keys for params map
 const (
-	Id        string = "_id"
+	ID        string = "_id"
 	FirstName string = "firstName"
 	LastName  string = "lastName"
 	Username  string = "username"
 	Email     string = "email"
+	Skills    string = "skills"
 )
 
 var ctx = context.TODO()
@@ -44,7 +45,7 @@ func (m *UserModel) All() ([]*User, error) {
 }
 func (m *UserModel) FindById(id primitive.ObjectID) (*User, error) {
 	var user User
-	err := m.C.FindOne((ctx), bson.M{Id: id}).Decode(&user)
+	err := m.C.FindOne((ctx), bson.M{ID: id}).Decode(&user)
 	if err != nil {
 		return nil, err
 	}
@@ -61,7 +62,7 @@ func (m *UserModel) FindByUserInfo(usernameOrEmail UserInfo) (*User, error) {
 func (m *UserModel) FindByParameters(params map[string]string) ([]User, error) {
 	query := bson.M{}
 	for key, value := range params {
-		if key == Id {
+		if key == ID {
 			panic("Use FindById to find by id")
 		}
 		query[key] = value
@@ -100,7 +101,7 @@ func (m *UserModel) Update(user *User, changingPassword bool) (*User, error) {
 		}
 		user.Password = hashedPassword
 	}
-	_, err := m.C.ReplaceOne(ctx, bson.M{Id: user.ID}, user)
+	_, err := m.C.ReplaceOne(ctx, bson.M{ID: user.ID}, user)
 	if err != nil {
 		return nil, err
 	}
