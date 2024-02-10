@@ -8,7 +8,7 @@ import (
 
 func TestMapTo(t *testing.T) {
 	t.Run("TestMapToString", func(t *testing.T) {
-		arr := []int{1, 2, 3}
+		arr := []int{1, 2, 2}
 		fn := func(i int) string { return strconv.Itoa(i) }
 		want := []string{"1", "2", "3"}
 		if got := MapTo(arr, fn); !slices.Equal(got, want) {
