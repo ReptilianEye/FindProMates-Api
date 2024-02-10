@@ -3,7 +3,7 @@ package resolvers
 import (
 	"example/FindProMates-Api/graph/model"
 	"example/FindProMates-Api/internal/app"
-	"example/FindProMates-Api/internal/database/collabrequests"
+	"example/FindProMates-Api/internal/database/collabrequest"
 	"example/FindProMates-Api/internal/database/projects"
 	"example/FindProMates-Api/internal/database/users"
 	"example/FindProMates-Api/internal/pkg/utils"
@@ -11,7 +11,7 @@ import (
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
-func CollabRequestByStrId(id string) (*collabrequests.CollabRequest, error) {
+func CollabRequestByStrId(id string) (*collabrequest.CollabRequest, error) {
 	collabReqId, err := primitive.ObjectIDFromHex(id)
 	if err != nil {
 		return nil, err
@@ -35,7 +35,7 @@ func CollabRequestsByProject(project *projects.Project) ([]*model.CollabRequest,
 	return utils.MapTo(collabRequests, MapToQueryCollabRequest), nil
 }
 
-func MapToQueryCollabRequest(collabRequest *collabrequests.CollabRequest) *model.CollabRequest {
+func MapToQueryCollabRequest(collabRequest *collabrequest.CollabRequest) *model.CollabRequest {
 	return &model.CollabRequest{
 		ID:        collabRequest.ID.Hex(),
 		Project:   MapToQueryProject(ProjectByObjId(collabRequest.ProjectID)),

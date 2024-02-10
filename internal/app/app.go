@@ -3,7 +3,7 @@ package app
 import (
 	"context"
 	"example/FindProMates-Api/internal/database"
-	"example/FindProMates-Api/internal/database/collabrequests"
+	"example/FindProMates-Api/internal/database/collabrequest"
 	"example/FindProMates-Api/internal/database/notes"
 	"example/FindProMates-Api/internal/database/projects"
 	"example/FindProMates-Api/internal/database/tasks"
@@ -20,7 +20,7 @@ type Application struct {
 	Users          *users.UserModel
 	Notes          *notes.NoteModel
 	Tasks          *tasks.TaskModel
-	CollabRequests *collabrequests.CollabRequestModel
+	CollabRequests *collabrequest.CollabRequestModel
 }
 
 func InitApp() context.CancelFunc {
@@ -46,8 +46,8 @@ func InitApp() context.CancelFunc {
 			Tasks: &tasks.TaskModel{
 				C: database.Db.Collection(tasks.TaskCollection),
 			},
-			CollabRequests: &collabrequests.CollabRequestModel{
-				C: database.Db.Collection(collabrequests.CollabRequestCollection),
+			CollabRequests: &collabrequest.CollabRequestModel{
+				C: database.Db.Collection(collabrequest.CollabRequestCollection),
 			},
 		}
 		dbCancel <- cancel
