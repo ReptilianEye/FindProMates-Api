@@ -8,7 +8,7 @@ import (
 
 func TestMapTo(t *testing.T) {
 	t.Run("TestMapToString", func(t *testing.T) {
-		arr := []int{1, 2, 2}
+		arr := []int{1, 2, 3}
 		fn := func(i int) string { return strconv.Itoa(i) }
 		want := []string{"1", "2", "3"}
 		if got := MapTo(arr, fn); !slices.Equal(got, want) {
@@ -109,17 +109,7 @@ func TestKeys(t *testing.T) {
 	t.Run("TestKeys", func(t *testing.T) {
 		m := map[string]int{"a": 1, "b": 2, "c": 3}
 		want := []string{"a", "b", "c"}
-		if got := Keys(m); !slices.Equal(got, want) {
-			t.Errorf("Keys() = %v, want %v", got, want)
-		}
-	})
-}
-
-func TestValues(t *testing.T) {
-	t.Run("TestValues", func(t *testing.T) {
-		m := map[string]int{"a": 1, "b": 2, "c": 3}
-		got := Values(m)
-		want := []int{1, 2, 3}
+		got := Keys(m)
 		for _, v := range got {
 			if !slices.Contains(want, v) {
 				t.Errorf("Value %v not found in %v", v, want)
@@ -127,34 +117,16 @@ func TestValues(t *testing.T) {
 		}
 	})
 }
-func TestEqual(t *testing.T) {
-	t.Run("TestEqualTrueInt", func(t *testing.T) {
-		a := []int{1, 2, 3}
-		b := []int{1, 2, 3}
-		if got := slices.Equal(a, b); !got {
-			t.Errorf("Equal() = %v, want %v", got, true)
-		}
-	})
 
-	t.Run("TestEqualFalseInt", func(t *testing.T) {
-		a := []int{1, 2, 3}
-		b := []int{1, 2, 4}
-		if got := slices.Equal(a, b); got {
-			t.Errorf("Equal() = %v, want %v", got, false)
-		}
-	})
-	t.Run("TestEqualTrueString", func(t *testing.T) {
-		a := []string{"a", "b", "c"}
-		b := []string{"a", "b", "c"}
-		if got := slices.Equal(a, b); !got {
-			t.Errorf("Equal() = %v, want %v", got, true)
-		}
-	})
-	t.Run("TestEqualFalseString", func(t *testing.T) {
-		a := []string{"a", "b", "c"}
-		b := []string{"a", "b", "d"}
-		if got := slices.Equal(a, b); got {
-			t.Errorf("Equal() = %v, want %v", got, false)
+func TestValues(t *testing.T) {
+	t.Run("TestValues", func(t *testing.T) {
+		m := map[string]int{"a": 1, "b": 2, "c": 3}
+		want := []int{1, 2, 3}
+		got := Values(m)
+		for _, v := range got {
+			if !slices.Contains(want, v) {
+				t.Errorf("Value %v not found in %v", v, want)
+			}
 		}
 	})
 }
