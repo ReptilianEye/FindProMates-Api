@@ -165,6 +165,21 @@ func (r *mutationResolver) DeleteTask(ctx context.Context, id string) (bool, err
 	panic(fmt.Errorf("not implemented: DeleteTask - deleteTask"))
 }
 
+// CreateCollabRequest is the resolver for the createCollabRequest field.
+func (r *mutationResolver) CreateCollabRequest(ctx context.Context, projectID string, message string) (*model.CollabRequest, error) {
+	panic(fmt.Errorf("not implemented: CreateCollabRequest - createCollabRequest"))
+}
+
+// UpdateCollabRequest is the resolver for the updateCollabRequest field.
+func (r *mutationResolver) UpdateCollabRequest(ctx context.Context, id string, status string, feedback *string) (*model.CollabRequest, error) {
+	panic(fmt.Errorf("not implemented: UpdateCollabRequest - updateCollabRequest"))
+}
+
+// DeleteCollabRequest is the resolver for the deleteCollabRequest field.
+func (r *mutationResolver) DeleteCollabRequest(ctx context.Context, id string) (bool, error) {
+	panic(fmt.Errorf("not implemented: DeleteCollabRequest - deleteCollabRequest"))
+}
+
 // Users is the resolver for the users field.
 func (r *queryResolver) Users(ctx context.Context) ([]*model.User, error) {
 	usersArr, err := app.App.Users.All()

@@ -65,19 +65,22 @@ type ComplexityRoot struct {
 	}
 
 	Mutation struct {
-		CreateNote    func(childComplexity int, projectID string, note string) int
-		CreateProject func(childComplexity int, newProject model.NewProject) int
-		CreateTask    func(childComplexity int, projectID string, task string, deadline *time.Time, priorityLevel string) int
-		CreateUser    func(childComplexity int, newUser model.NewUser) int
-		DeleteNote    func(childComplexity int, id string) int
-		DeleteProject func(childComplexity int, id string) int
-		DeleteTask    func(childComplexity int, id string) int
-		Login         func(childComplexity int, input model.Login) int
-		RefreshToken  func(childComplexity int, oldToken string) int
-		UpdateNote    func(childComplexity int, id string, note string) int
-		UpdateProject func(childComplexity int, id string, updatedProject model.UpdatedProject) int
-		UpdateTask    func(childComplexity int, id string, task *string, deadline *time.Time, priorityLevel *string, completionStatus *string) int
-		UpdateUser    func(childComplexity int, updatedUser model.UpdatedUser) int
+		CreateCollabRequest func(childComplexity int, projectID string, message string) int
+		CreateNote          func(childComplexity int, projectID string, note string) int
+		CreateProject       func(childComplexity int, newProject model.NewProject) int
+		CreateTask          func(childComplexity int, projectID string, task string, deadline *time.Time, priorityLevel string) int
+		CreateUser          func(childComplexity int, newUser model.NewUser) int
+		DeleteCollabRequest func(childComplexity int, id string) int
+		DeleteNote          func(childComplexity int, id string) int
+		DeleteProject       func(childComplexity int, id string) int
+		DeleteTask          func(childComplexity int, id string) int
+		Login               func(childComplexity int, input model.Login) int
+		RefreshToken        func(childComplexity int, oldToken string) int
+		UpdateCollabRequest func(childComplexity int, id string, status string, feedback *string) int
+		UpdateNote          func(childComplexity int, id string, note string) int
+		UpdateProject       func(childComplexity int, id string, updatedProject model.UpdatedProject) int
+		UpdateTask          func(childComplexity int, id string, task *string, deadline *time.Time, priorityLevel *string, completionStatus *string) int
+		UpdateUser          func(childComplexity int, updatedUser model.UpdatedUser) int
 	}
 
 	Note struct {
@@ -152,6 +155,9 @@ type MutationResolver interface {
 	CreateTask(ctx context.Context, projectID string, task string, deadline *time.Time, priorityLevel string) (*model.Task, error)
 	UpdateTask(ctx context.Context, id string, task *string, deadline *time.Time, priorityLevel *string, completionStatus *string) (*model.Task, error)
 	DeleteTask(ctx context.Context, id string) (bool, error)
+	CreateCollabRequest(ctx context.Context, projectID string, message string) (*model.CollabRequest, error)
+	UpdateCollabRequest(ctx context.Context, id string, status string, feedback *string) (*model.CollabRequest, error)
+	DeleteCollabRequest(ctx context.Context, id string) (bool, error)
 }
 type QueryResolver interface {
 	Users(ctx context.Context) ([]*model.User, error)
@@ -259,6 +265,18 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.CollabRequest.Status(childComplexity), true
 
+	case "Mutation.createCollabRequest":
+		if e.complexity.Mutation.CreateCollabRequest == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_createCollabRequest_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Mutation.CreateCollabRequest(childComplexity, args["projectId"].(string), args["message"].(string)), true
+
 	case "Mutation.createNote":
 		if e.complexity.Mutation.CreateNote == nil {
 			break
@@ -306,6 +324,18 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.Mutation.CreateUser(childComplexity, args["newUser"].(model.NewUser)), true
+
+	case "Mutation.deleteCollabRequest":
+		if e.complexity.Mutation.DeleteCollabRequest == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_deleteCollabRequest_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Mutation.DeleteCollabRequest(childComplexity, args["id"].(string)), true
 
 	case "Mutation.deleteNote":
 		if e.complexity.Mutation.DeleteNote == nil {
@@ -366,6 +396,18 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.Mutation.RefreshToken(childComplexity, args["old_token"].(string)), true
+
+	case "Mutation.updateCollabRequest":
+		if e.complexity.Mutation.UpdateCollabRequest == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_updateCollabRequest_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Mutation.UpdateCollabRequest(childComplexity, args["id"].(string), args["status"].(string), args["feedback"].(*string)), true
 
 	case "Mutation.updateNote":
 		if e.complexity.Mutation.UpdateNote == nil {
@@ -883,6 +925,30 @@ var parsedSchema = gqlparser.MustLoadSchema(sources...)
 
 // region    ***************************** args.gotpl *****************************
 
+func (ec *executionContext) field_Mutation_createCollabRequest_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 string
+	if tmp, ok := rawArgs["projectId"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("projectId"))
+		arg0, err = ec.unmarshalNID2string(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["projectId"] = arg0
+	var arg1 string
+	if tmp, ok := rawArgs["message"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("message"))
+		arg1, err = ec.unmarshalNString2string(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["message"] = arg1
+	return args, nil
+}
+
 func (ec *executionContext) field_Mutation_createNote_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
 	var err error
 	args := map[string]interface{}{}
@@ -979,6 +1045,21 @@ func (ec *executionContext) field_Mutation_createUser_args(ctx context.Context, 
 	return args, nil
 }
 
+func (ec *executionContext) field_Mutation_deleteCollabRequest_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 string
+	if tmp, ok := rawArgs["id"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("id"))
+		arg0, err = ec.unmarshalNID2string(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["id"] = arg0
+	return args, nil
+}
+
 func (ec *executionContext) field_Mutation_deleteNote_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
 	var err error
 	args := map[string]interface{}{}
@@ -1051,6 +1132,39 @@ func (ec *executionContext) field_Mutation_refreshToken_args(ctx context.Context
 		}
 	}
 	args["old_token"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_Mutation_updateCollabRequest_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 string
+	if tmp, ok := rawArgs["id"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("id"))
+		arg0, err = ec.unmarshalNID2string(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["id"] = arg0
+	var arg1 string
+	if tmp, ok := rawArgs["status"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("status"))
+		arg1, err = ec.unmarshalNString2string(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["status"] = arg1
+	var arg2 *string
+	if tmp, ok := rawArgs["feedback"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("feedback"))
+		arg2, err = ec.unmarshalOString2ᚖstring(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["feedback"] = arg2
 	return args, nil
 }
 
@@ -2721,6 +2835,203 @@ func (ec *executionContext) fieldContext_Mutation_deleteTask(ctx context.Context
 	}()
 	ctx = graphql.WithFieldContext(ctx, fc)
 	if fc.Args, err = ec.field_Mutation_deleteTask_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Mutation_createCollabRequest(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Mutation_createCollabRequest(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Mutation().CreateCollabRequest(rctx, fc.Args["projectId"].(string), fc.Args["message"].(string))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*model.CollabRequest)
+	fc.Result = res
+	return ec.marshalNCollabRequest2ᚖexampleᚋFindProMatesᚑApiᚋgraphᚋmodelᚐCollabRequest(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Mutation_createCollabRequest(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_CollabRequest_id(ctx, field)
+			case "project":
+				return ec.fieldContext_CollabRequest_project(ctx, field)
+			case "requester":
+				return ec.fieldContext_CollabRequest_requester(ctx, field)
+			case "message":
+				return ec.fieldContext_CollabRequest_message(ctx, field)
+			case "responder":
+				return ec.fieldContext_CollabRequest_responder(ctx, field)
+			case "feedback":
+				return ec.fieldContext_CollabRequest_feedback(ctx, field)
+			case "status":
+				return ec.fieldContext_CollabRequest_status(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type CollabRequest", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Mutation_createCollabRequest_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Mutation_updateCollabRequest(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Mutation_updateCollabRequest(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Mutation().UpdateCollabRequest(rctx, fc.Args["id"].(string), fc.Args["status"].(string), fc.Args["feedback"].(*string))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*model.CollabRequest)
+	fc.Result = res
+	return ec.marshalNCollabRequest2ᚖexampleᚋFindProMatesᚑApiᚋgraphᚋmodelᚐCollabRequest(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Mutation_updateCollabRequest(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_CollabRequest_id(ctx, field)
+			case "project":
+				return ec.fieldContext_CollabRequest_project(ctx, field)
+			case "requester":
+				return ec.fieldContext_CollabRequest_requester(ctx, field)
+			case "message":
+				return ec.fieldContext_CollabRequest_message(ctx, field)
+			case "responder":
+				return ec.fieldContext_CollabRequest_responder(ctx, field)
+			case "feedback":
+				return ec.fieldContext_CollabRequest_feedback(ctx, field)
+			case "status":
+				return ec.fieldContext_CollabRequest_status(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type CollabRequest", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Mutation_updateCollabRequest_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Mutation_deleteCollabRequest(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Mutation_deleteCollabRequest(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Mutation().DeleteCollabRequest(rctx, fc.Args["id"].(string))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(bool)
+	fc.Result = res
+	return ec.marshalNBoolean2bool(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Mutation_deleteCollabRequest(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Boolean does not have child fields")
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Mutation_deleteCollabRequest_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
 		ec.Error(ctx, err)
 		return fc, err
 	}
@@ -7400,6 +7711,27 @@ func (ec *executionContext) _Mutation(ctx context.Context, sel ast.SelectionSet)
 		case "deleteTask":
 			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
 				return ec._Mutation_deleteTask(ctx, field)
+			})
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "createCollabRequest":
+			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._Mutation_createCollabRequest(ctx, field)
+			})
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "updateCollabRequest":
+			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._Mutation_updateCollabRequest(ctx, field)
+			})
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "deleteCollabRequest":
+			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._Mutation_deleteCollabRequest(ctx, field)
 			})
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
