@@ -85,6 +85,19 @@ func (m *UserModel) Create(user *User) (*User, error) {
 		return nil, err
 	}
 	user.Password = hashedPassword
+	if err := utils.ValidateEmail(user.Email); err != nil {
+		return nil, err
+	}
+	if name, err := utils.ValidateName(user.FirstName); err != nil {
+		return nil, err
+	} else {
+		user.FirstName = *name
+	}
+	if name, err := utils.ValidateName(user.LastName); err != nil {
+		return nil, err
+	} else {
+		user.LastName = *name
+	}
 	result, err := m.C.InsertOne(ctx, user)
 	if err != nil {
 		return nil, err
