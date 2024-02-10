@@ -1,10 +1,6 @@
-# Project Name
+# API server for a FindProMates app.
 
-API server for a FindProMates app.
-
-## Description
-
-This project is a GraphQL server implemented in Go. It uses gqlgen for schema generation and MongoDB for data storage.
+## This project is a GraphQL server implemented in Go. It uses gqlgen for schema generation and MongoDB for data storage.
 
 ## Directory Structure
 
