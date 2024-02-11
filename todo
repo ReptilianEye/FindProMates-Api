@@ -1,6 +1,3 @@
-update bazy danych:
-
 querys/mutations:
   - propozycja projektu który ma najwięcej wspólnych skills
 
-  - poprawienie autentykacji
