@@ -1,5 +1,7 @@
 package util_types
 
+import "fmt"
+
 type CompletionStatus string
 
 const (
@@ -12,10 +14,10 @@ func (c CompletionStatus) String() string {
 	return string(c)
 }
 
-func (c CompletionStatus) IsValid() bool {
+func (c CompletionStatus) IsValid() error {
 	switch c {
 	case NotStarted, InProgress, Completed:
-		return true
+		return nil
 	}
-	return false
+	return fmt.Errorf("%s is invalid completion status", c)
 }

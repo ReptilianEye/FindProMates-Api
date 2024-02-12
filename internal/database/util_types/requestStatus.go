@@ -1,5 +1,7 @@
 package util_types
 
+import "fmt"
+
 type RequestStatus string
 
 const (
@@ -8,14 +10,14 @@ const (
 	Rejected RequestStatus = "Rejected"
 )
 
-func (c RequestStatus) String() string {
-	return string(c)
+func (r RequestStatus) String() string {
+	return string(r)
 }
 
-func (c RequestStatus) IsValid() bool {
-	switch c {
+func (r RequestStatus) IsValid() error {
+	switch r {
 	case Pending, Accepted, Rejected:
-		return true
+		return nil
 	}
-	return false
+	return fmt.Errorf("%s is invalid request status", r)
 }

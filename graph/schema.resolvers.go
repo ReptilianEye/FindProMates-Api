@@ -83,7 +83,7 @@ func (r *mutationResolver) CreateProject(ctx context.Context, newProject model.N
 	if err != nil {
 		return nil, err
 	}
-	_, err = app.App.Projects.Create(project)
+	err = app.App.Projects.Create(project)
 	if err != nil {
 		return nil, err
 	}
@@ -101,13 +101,13 @@ func (r *mutationResolver) UpdateProject(ctx context.Context, id string, updated
 		return nil, err
 	}
 	if !resolvers.CanMutateProject(project, user) {
-		return nil, fmt.Errorf("access denied")
+		return nil, fmt.Errorf("only collaborators can edit project")
 	}
 	err = resolvers.UpdateProject(project, updatedProject)
 	if err != nil {
 		return nil, err
 	}
-	_, err = app.App.Projects.Update(project.ID, project)
+	err = app.App.Projects.Update(project.ID, project)
 	if err != nil {
 		return nil, err
 	}
@@ -125,9 +125,9 @@ func (r *mutationResolver) DeleteProject(ctx context.Context, id string) (bool, 
 		return false, err
 	}
 	if !resolvers.IsOwner(project, user) {
-		return false, fmt.Errorf("access denied")
+		return false, fmt.Errorf("only owner can delete project")
 	}
-	_, err = app.App.Projects.Delete(project.ID)
+	err = app.App.Projects.Delete(project.ID)
 	if err != nil {
 		return false, err
 	}
@@ -145,10 +145,10 @@ func (r *mutationResolver) CreateNote(ctx context.Context, projectID string, not
 		return nil, err
 	}
 	if !resolvers.CanMutateProject(project, user) {
-		return nil, fmt.Errorf("access denied")
+		return nil, fmt.Errorf("only collaborators can create notes")
 	}
 	newNote := resolvers.MapToNoteFromNew(project.ID, user.ID, note)
-	_, err = app.App.Notes.Create(newNote)
+	err = app.App.Notes.Create(newNote)
 	if err != nil {
 		return nil, err
 	}
@@ -166,7 +166,7 @@ func (r *mutationResolver) UpdateNote(ctx context.Context, id string, note strin
 		return nil, err
 	}
 	if user.ID != noteObj.AddedBy {
-		return nil, fmt.Errorf("access denied")
+		return nil, fmt.Errorf("only author of the note can edit it")
 	}
 	resolvers.UpdateNote(noteObj, note)
 	_, err = app.App.Notes.Update(noteObj)
@@ -186,8 +186,8 @@ func (r *mutationResolver) DeleteNote(ctx context.Context, id string) (bool, err
 	if err != nil {
 		return false, err
 	}
-	if !resolvers.CanMutateProject(resolvers.ProjectByObjId(note.ProjectID), user) {
-		return false, fmt.Errorf("access denied")
+	if user.ID != note.AddedBy {
+		return false, fmt.Errorf("only author of the note can delete it")
 	}
 	_, err = app.App.Notes.Delete(note.ID)
 	if err != nil {
@@ -207,13 +207,13 @@ func (r *mutationResolver) CreateTask(ctx context.Context, projectID string, new
 		return nil, err
 	}
 	if !resolvers.CanMutateProject(project, user) {
-		return nil, fmt.Errorf("access denied")
+		return nil, fmt.Errorf("only collaborators can create tasks")
 	}
 	newTaskObj, err := resolvers.MapToTaskFromNew(project.ID, user.ID, newTask)
 	if err != nil {
 		return nil, err
 	}
-	_, err = app.App.Tasks.Create(newTaskObj)
+	err = app.App.Tasks.Create(newTaskObj)
 	if err != nil {
 		return nil, err
 	}
@@ -231,13 +231,13 @@ func (r *mutationResolver) UpdateTask(ctx context.Context, id string, updatedTas
 		return nil, err
 	}
 	if !resolvers.CanMutateProject(resolvers.ProjectByObjId(task.ProjectID), user) {
-		return nil, fmt.Errorf("access denied")
+		return nil, fmt.Errorf("only collaborators can edit tasks")
 	}
 	err = resolvers.UpdateTask(task, updatedTask)
 	if err != nil {
 		return nil, err
 	}
-	_, err = app.App.Tasks.Update(task)
+	err = app.App.Tasks.Update(task)
 	if err != nil {
 		return nil, err
 	}
@@ -255,10 +255,9 @@ func (r *mutationResolver) DeleteTask(ctx context.Context, id string) (bool, err
 		return false, err
 	}
 	if !resolvers.CanMutateProject(resolvers.ProjectByObjId(task.ProjectID), user) {
-		return false, fmt.Errorf("access denied")
+		return false, fmt.Errorf("only collaborators can delete tasks")
 	}
-	_, err = app.App.Tasks.Delete(task.ID)
-	if err != nil {
+	if err := app.App.Tasks.Delete(task.ID); err != nil {
 		return false, err
 	}
 	return true, nil
@@ -278,8 +277,7 @@ func (r *mutationResolver) CreateCollabRequest(ctx context.Context, projectID st
 		return nil, fmt.Errorf("user is already a collaborator")
 	}
 	collabRequest := resolvers.MapToCollabRequestFromNew(project.ID, user.ID, message)
-	err = app.App.CollabRequests.Create(collabRequest)
-	if err != nil {
+	if err := app.App.CollabRequests.Create(collabRequest); err != nil {
 		return nil, err
 	}
 	return resolvers.MapToQueryCollabRequest(collabRequest), nil
@@ -287,7 +285,26 @@ func (r *mutationResolver) CreateCollabRequest(ctx context.Context, projectID st
 
 // AnswerCollabRequest is the resolver for the answerCollabRequest field.
 func (r *mutationResolver) AnswerCollabRequest(ctx context.Context, id string, status string, feedback string) (*model.CollabRequest, error) {
-	panic(fmt.Errorf("not implemented: AnswerCollabRequest - answerCollabRequest"))
+	user, err := resolvers.UserFromContext(ctx)
+	if err != nil {
+		return nil, err
+	}
+	collabRequest, err := resolvers.CollabRequestByStrId(id)
+	if err != nil {
+		return nil, err
+	}
+	if !resolvers.CanMutateProject(resolvers.ProjectByObjId(collabRequest.ProjectID), user) {
+		return nil, fmt.Errorf("only collaborators can answer collab requests")
+	}
+
+	err = resolvers.UpdateCollabRequest(collabRequest, user, status, feedback)
+	if err != nil {
+		return nil, err
+	}
+	if err := app.App.CollabRequests.Update(collabRequest); err != nil {
+		return nil, err
+	}
+	return resolvers.MapToQueryCollabRequest(collabRequest), nil
 }
 
 // DeleteCollabRequest is the resolver for the deleteCollabRequest field.
@@ -301,10 +318,10 @@ func (r *mutationResolver) DeleteCollabRequest(ctx context.Context, id string) (
 		return false, err
 	}
 	if collabRequest.RequesterID != user.ID {
-		return false, fmt.Errorf("access denied")
+		return false, fmt.Errorf("only creator of collab request can delete it")
 	}
-	err = app.App.CollabRequests.Delete(collabRequest.ID)
-	if err != nil {
+
+	if err := app.App.CollabRequests.Delete(collabRequest.ID); err != nil {
 		return false, err
 	}
 	return true, nil
@@ -407,7 +424,7 @@ func (r *queryResolver) Project(ctx context.Context, id string) (*model.Project,
 		return nil, err
 	}
 	if !resolvers.CanQueryProject(project, user) {
-		return nil, fmt.Errorf("access denied")
+		return nil, fmt.Errorf("not found")
 	}
 	return resolvers.MapToQueryProject(project), nil
 }
@@ -428,7 +445,7 @@ func (r *queryResolver) NotesByProject(ctx context.Context, id string) ([]*model
 		return nil, err
 	}
 	if !resolvers.CanMutateProject(project, user) {
-		return nil, fmt.Errorf("access denied")
+		return nil, fmt.Errorf("only collaborators can see notes")
 	}
 	notes, err := app.App.Notes.AllByProjectId(project.ID)
 	if err != nil {
@@ -448,7 +465,7 @@ func (r *queryResolver) Note(ctx context.Context, id string) (*model.Note, error
 		return nil, err
 	}
 	if !resolvers.CanMutateProject(resolvers.ProjectByObjId(note.ProjectID), user) {
-		return nil, fmt.Errorf("access denied")
+		return nil, fmt.Errorf("only collaborators can see notes")
 	}
 	return resolvers.MapToQueryNote(note), nil
 }
@@ -462,8 +479,8 @@ func (r *queryResolver) Tasks(ctx context.Context) ([]*model.Task, error) {
 	return resolvers.TasksAssignedToUser(user)
 }
 
-// TaskByProject is the resolver for the taskByProject field.
-func (r *queryResolver) TaskByProject(ctx context.Context, id string) ([]*model.Task, error) {
+// TasksByProject is the resolver for the tasksByProject field.
+func (r *queryResolver) TasksByProject(ctx context.Context, id string) ([]*model.Task, error) {
 	user, err := resolvers.UserFromContext(ctx)
 	if err != nil {
 		return nil, err
@@ -473,7 +490,7 @@ func (r *queryResolver) TaskByProject(ctx context.Context, id string) ([]*model.
 		return nil, err
 	}
 	if !resolvers.CanMutateProject(project, user) {
-		return nil, fmt.Errorf("access denied")
+		return nil, fmt.Errorf("only collaborators can see tasks")
 	}
 	return resolvers.TasksByProject(project)
 }
@@ -489,7 +506,7 @@ func (r *queryResolver) Task(ctx context.Context, id string) (*model.Task, error
 		return nil, err
 	}
 	if !resolvers.CanMutateProject(resolvers.ProjectByObjId(task.ProjectID), user) {
-		return nil, fmt.Errorf("access denied")
+		return nil, fmt.Errorf("only collaborators can see tasks")
 	}
 	return resolvers.MapToQueryTask(task), nil
 }
@@ -514,7 +531,7 @@ func (r *queryResolver) CollabRequestsByProject(ctx context.Context, id string) 
 		return nil, err
 	}
 	if !resolvers.CanMutateProject(project, user) {
-		return nil, fmt.Errorf("access denied")
+		return nil, fmt.Errorf("only collaborators can see collab requests")
 	}
 	return resolvers.CollabRequestsByProject(project)
 }
@@ -529,7 +546,7 @@ func (r *queryResolver) CollabRequest(ctx context.Context, id string) (*model.Co
 	if err != nil {
 		return nil, err
 	}
-	if !resolvers.CanMutateProject(resolvers.ProjectByObjId(collabRequest.ProjectID), user) {
+	if collabRequest.RequesterID != user.ID && !resolvers.CanMutateProject(resolvers.ProjectByObjId(collabRequest.ProjectID), user) {
 		return nil, fmt.Errorf("access denied")
 	}
 	return resolvers.MapToQueryCollabRequest(collabRequest), nil
@@ -543,32 +560,3 @@ func (r *Resolver) Query() QueryResolver { return &queryResolver{r} }
 
 type mutationResolver struct{ *Resolver }
 type queryResolver struct{ *Resolver }
-
-// !!! WARNING !!!
-// The code below was going to be deleted when updating resolvers. It has been copied here so you have
-// one last chance to move it out of harms way if you want. There are two reasons this happens:
-//   - When renaming or deleting a resolver the old code will be put in here. You can safely delete
-//     it when you're done.
-//   - You have helper methods in this file. Move them out to keep these resolver files clean.
-func (r *mutationResolver) UpdateCollabRequest(ctx context.Context, id string, status string, feedback string) (*model.CollabRequest, error) {
-	user, err := resolvers.UserFromContext(ctx)
-	if err != nil {
-		return nil, err
-	}
-	collabRequest, err := resolvers.CollabRequestByStrId(id)
-	if err != nil {
-		return nil, err
-	}
-	if !resolvers.CanMutateProject(resolvers.ProjectByObjId(collabRequest.ProjectID), user) {
-		return nil, fmt.Errorf("access denied")
-	}
-	err = resolvers.UpdateCollabRequest(collabRequest, status, feedback)
-	if err != nil {
-		return nil, err
-	}
-	err = app.App.CollabRequests.Update(collabRequest)
-	if err != nil {
-		return nil, err
-	}
-	return resolvers.MapToQueryCollabRequest(collabRequest), nil
-}

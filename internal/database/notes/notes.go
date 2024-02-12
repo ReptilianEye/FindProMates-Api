@@ -44,12 +44,17 @@ func (m *NoteModel) AllByProjectId(projectId primitive.ObjectID) ([]*Note, error
 	return notes, nil
 }
 
-func (m *NoteModel) Create(note *Note) (*mongo.InsertOneResult, error) {
-	return m.C.InsertOne(ctx, note)
+func (m *NoteModel) Create(note *Note) error {
+	result, err := m.C.InsertOne(ctx, note)
+	if err != nil {
+		return err
+	}
+	note.ID = result.InsertedID.(primitive.ObjectID)
+	return nil
 }
 
 func (m *NoteModel) Update(note *Note) (*mongo.UpdateResult, error) {
-	return m.C.UpdateOne(ctx, bson.M{Id: note.ID}, bson.M{"$set": note})
+	return m.C.ReplaceOne(ctx, bson.M{Id: note.ID}, note)
 }
 func (m *NoteModel) Delete(id primitive.ObjectID) (*mongo.DeleteResult, error) {
 	return m.C.DeleteOne(ctx, bson.M{Id: id})

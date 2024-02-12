@@ -1,5 +1,7 @@
 package util_types
 
+import "fmt"
+
 type Skill string
 
 const (
@@ -14,10 +16,10 @@ const (
 func (s Skill) String() string {
 	return string(s)
 }
-func (s Skill) IsValid() bool {
+func (s Skill) IsValid() error {
 	switch s {
 	case Python, Java, Go, JavaScript, React, Angular:
-		return true
+		return nil
 	}
-	return false
+	return fmt.Errorf("%s is invalid skill", s)
 }

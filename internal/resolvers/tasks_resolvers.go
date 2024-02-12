@@ -10,6 +10,7 @@ import (
 	"example/FindProMates-Api/internal/pkg/utils"
 	"fmt"
 	"slices"
+	"time"
 
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
@@ -37,6 +38,7 @@ func TasksByProject(project *projects.Project) ([]*model.Task, error) {
 }
 
 func MapToQueryTask(task *tasks.Task) *model.Task {
+	fmt.Println(task)
 	assignedTo := utils.MapTo(task.AssignedTo, UserByObjId)
 	return &model.Task{
 		ID:               task.ID.Hex(),
@@ -51,13 +53,12 @@ func MapToQueryTask(task *tasks.Task) *model.Task {
 	}
 }
 func MapToTaskFromNew(projectID primitive.ObjectID, addedBy primitive.ObjectID, task model.NewTask) (*tasks.Task, error) {
-	priority := util_types.Medium
+	priority := util_types.MediumPriority
 	if task.PriorityLevel != nil {
-		p, err := util_types.PriorityLevelFromString(*task.PriorityLevel)
-		if err != nil {
+		priority = util_types.PriorityLevel(*task.PriorityLevel)
+		if err := priority.IsValid(); err != nil {
 			return nil, err
 		}
-		priority = p
 	}
 	var assignedTo []primitive.ObjectID
 	if task.AssignedTo != nil {
@@ -72,7 +73,8 @@ func MapToTaskFromNew(projectID primitive.ObjectID, addedBy primitive.ObjectID, 
 		AddedBy:          addedBy,
 		AssignedTo:       assignedTo,
 		Task:             task.Task,
-		Deadline:         *task.Deadline,
+		Deadline:         utils.Elivis(task.Deadline, time.Now().AddDate(10, 0, 0)),
+		LastModified:     time.Now(),
 		PriorityLevel:    priority,
 		CompletionStatus: utils.Ternary(len(assignedTo) > 0, util_types.InProgress, util_types.NotStarted).(util_types.CompletionStatus),
 	}, nil
@@ -81,18 +83,16 @@ func UpdateTask(task *tasks.Task, updatedTask model.UpdatedTask) error {
 	task.Task = utils.Elivis(updatedTask.Task, task.Task)
 	task.Deadline = utils.Elivis(updatedTask.Deadline, task.Deadline)
 	if updatedTask.PriorityLevel != nil {
-		p, err := util_types.PriorityLevelFromString(*updatedTask.PriorityLevel)
-		if err != nil {
+		task.PriorityLevel = util_types.PriorityLevel(*updatedTask.PriorityLevel)
+		if err := task.PriorityLevel.IsValid(); err != nil {
 			return err
 		}
-		task.PriorityLevel = p
 	}
 	if updatedTask.CompletionStatus != nil {
-		status := util_types.CompletionStatus(*updatedTask.CompletionStatus)
-		if !status.IsValid() {
-			return fmt.Errorf("invalid completion status: %s", status)
+		task.CompletionStatus = util_types.CompletionStatus(*updatedTask.CompletionStatus)
+		if err := task.CompletionStatus.IsValid(); err != nil {
+			return err
 		}
-		task.CompletionStatus = status
 	}
 	if updatedTask.AssignedTo != nil {
 		handled, err := handleAssignedTo(updatedTask.AssignedTo, task.AssignedTo...)
@@ -104,6 +104,9 @@ func UpdateTask(task *tasks.Task, updatedTask model.UpdatedTask) error {
 			if !slices.Contains(project.Collaborators, id) {
 				return fmt.Errorf("user %s is not a collaborator", id.Hex())
 			}
+		}
+		if len(handled) > 0 && task.CompletionStatus == util_types.NotStarted {
+			task.CompletionStatus = util_types.InProgress
 		}
 		task.AssignedTo = handled
 	}

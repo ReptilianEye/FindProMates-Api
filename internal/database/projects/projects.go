@@ -74,19 +74,21 @@ func (m *ProjectModel) FindAllUserIsCollaborator(user primitive.ObjectID) ([]*Pr
 
 }
 
-func (m *ProjectModel) Create(project *Project) (*Project, error) {
+func (m *ProjectModel) Create(project *Project) error {
 	result, err := m.C.InsertOne(context.TODO(), project)
 	if err != nil {
-		return nil, err
+		return err
 	}
 	project.ID = result.InsertedID.(primitive.ObjectID)
-	return project, nil
+	return nil
 }
 
-func (m *ProjectModel) Update(id primitive.ObjectID, project *Project) (*mongo.UpdateResult, error) {
-	return m.C.ReplaceOne(context.TODO(), bson.M{ID: id}, project)
+func (m *ProjectModel) Update(id primitive.ObjectID, project *Project) error {
+	_, err := m.C.ReplaceOne(context.TODO(), bson.M{ID: id}, project)
+	return err
 }
 
-func (m *ProjectModel) Delete(id primitive.ObjectID) (*mongo.DeleteResult, error) {
-	return m.C.DeleteOne(context.TODO(), bson.M{ID: id})
+func (m *ProjectModel) Delete(id primitive.ObjectID) error {
+	_, err := m.C.DeleteOne(context.TODO(), bson.M{ID: id})
+	return err
 }

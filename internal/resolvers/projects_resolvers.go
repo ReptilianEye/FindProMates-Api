@@ -7,7 +7,6 @@ import (
 	"example/FindProMates-Api/internal/database/users"
 	"example/FindProMates-Api/internal/database/util_types"
 	"example/FindProMates-Api/internal/pkg/utils"
-	"fmt"
 	"log"
 	"slices"
 
@@ -96,11 +95,10 @@ func UpdateProject(baseProject *projects.Project, updatedProject model.UpdatedPr
 	baseProject.Description = utils.Elivis(updatedProject.Description, baseProject.Description)
 	baseProject.Public = utils.Elivis(updatedProject.Public, baseProject.Public)
 	if updatedProject.CompletionStatus != nil {
-		status := util_types.CompletionStatus(*updatedProject.CompletionStatus)
-		if !status.IsValid() {
-			return fmt.Errorf("invalid completion status")
+		baseProject.CompletionStatus = util_types.CompletionStatus(*updatedProject.CompletionStatus)
+		if err := baseProject.CompletionStatus.IsValid(); err != nil {
+			return err
 		}
-		baseProject.CompletionStatus = status
 	}
 
 	if updatedProject.Collaborators != nil {
@@ -137,8 +135,8 @@ func handleSkillsNeeded(skills []string, base ...util_types.Skill) ([]util_types
 	}
 	fromString := func(s string) (util_types.Skill, error) {
 		skill := util_types.Skill(s)
-		if !skill.IsValid() {
-			return skill, fmt.Errorf("invalid skill")
+		if err := skill.IsValid(); err != nil {
+			return "", err
 		}
 		return skill, nil
 

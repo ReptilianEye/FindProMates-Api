@@ -38,13 +38,21 @@ func CollabRequestsByProject(project *projects.Project) ([]*model.CollabRequest,
 }
 
 func MapToQueryCollabRequest(collabRequest *collabrequests.CollabRequest) *model.CollabRequest {
+	var responder *model.User
+	if !collabRequest.ResponderID.IsZero() {
+		responder = MapToQueryUser(UserByObjId(collabRequest.ResponderID))
+	}
+	var feedback *string
+	if collabRequest.Feedback != "" {
+		feedback = &collabRequest.Feedback
+	}
 	return &model.CollabRequest{
 		ID:        collabRequest.ID.Hex(),
 		Project:   MapToQueryProject(ProjectByObjId(collabRequest.ProjectID)),
 		Requester: MapToQueryUser(UserByObjId(collabRequest.RequesterID)),
-		Responder: MapToQueryUser(UserByObjId(collabRequest.ResponderID)),
+		Responder: responder,
 		Message:   collabRequest.Message,
-		Feedback:  &collabRequest.Feedback,
+		Feedback:  feedback,
 		Status:    collabRequest.Status.String(),
 	}
 }
@@ -56,12 +64,21 @@ func MapToCollabRequestFromNew(projectId primitive.ObjectID, requesterId primiti
 		Status:      util_types.Pending,
 	}
 }
-func UpdateCollabRequest(collabReq *collabrequests.CollabRequest, status string, feedback string) error {
-	statusT := util_types.RequestStatus(status)
-	if !statusT.IsValid() {
-		return fmt.Errorf(`Invalid status: "%s"`, status)
+func UpdateCollabRequest(collabReq *collabrequests.CollabRequest, responder *users.User, status string, feedback string) error {
+	if collabReq.Status == util_types.Accepted || collabReq.Status == util_types.Rejected {
+		return fmt.Errorf("cannot update request that has been accepted or rejected")
 	}
-	collabReq.Status = statusT
+	collabReq.Status = util_types.RequestStatus(status)
+	if err := collabReq.Status.IsValid(); err != nil {
+		return err
+	}
+	if collabReq.Status == util_types.Pending {
+		return fmt.Errorf("cannot update request to pending")
+	}
+	if len(feedback) < 1 && collabReq.Status == util_types.Rejected {
+		return fmt.Errorf("feedback cannot be empty")
+	}
 	collabReq.Feedback = feedback
+	collabReq.ResponderID = responder.ID
 	return nil
 }

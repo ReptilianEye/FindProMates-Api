@@ -112,8 +112,8 @@ type ComplexityRoot struct {
 		Project                 func(childComplexity int, id string) int
 		Projects                func(childComplexity int) int
 		Task                    func(childComplexity int, id string) int
-		TaskByProject           func(childComplexity int, id string) int
 		Tasks                   func(childComplexity int) int
+		TasksByProject          func(childComplexity int, id string) int
 		User                    func(childComplexity int, id string) int
 		UserProjectsByID        func(childComplexity int, id string) int
 		Users                   func(childComplexity int) int
@@ -169,7 +169,7 @@ type QueryResolver interface {
 	NotesByProject(ctx context.Context, id string) ([]*model.Note, error)
 	Note(ctx context.Context, id string) (*model.Note, error)
 	Tasks(ctx context.Context) ([]*model.Task, error)
-	TaskByProject(ctx context.Context, id string) ([]*model.Task, error)
+	TasksByProject(ctx context.Context, id string) ([]*model.Task, error)
 	Task(ctx context.Context, id string) (*model.Task, error)
 	CollabRequests(ctx context.Context) ([]*model.CollabRequest, error)
 	CollabRequestsByProject(ctx context.Context, id string) ([]*model.CollabRequest, error)
@@ -641,24 +641,24 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.Query.Task(childComplexity, args["id"].(string)), true
 
-	case "Query.taskByProject":
-		if e.complexity.Query.TaskByProject == nil {
-			break
-		}
-
-		args, err := ec.field_Query_taskByProject_args(context.TODO(), rawArgs)
-		if err != nil {
-			return 0, false
-		}
-
-		return e.complexity.Query.TaskByProject(childComplexity, args["id"].(string)), true
-
 	case "Query.tasks":
 		if e.complexity.Query.Tasks == nil {
 			break
 		}
 
 		return e.complexity.Query.Tasks(childComplexity), true
+
+	case "Query.tasksByProject":
+		if e.complexity.Query.TasksByProject == nil {
+			break
+		}
+
+		args, err := ec.field_Query_tasksByProject_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Query.TasksByProject(childComplexity, args["id"].(string)), true
 
 	case "Query.user":
 		if e.complexity.Query.User == nil {
@@ -1329,7 +1329,7 @@ func (ec *executionContext) field_Query_project_args(ctx context.Context, rawArg
 	return args, nil
 }
 
-func (ec *executionContext) field_Query_taskByProject_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+func (ec *executionContext) field_Query_task_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
 	var err error
 	args := map[string]interface{}{}
 	var arg0 string
@@ -1344,7 +1344,7 @@ func (ec *executionContext) field_Query_taskByProject_args(ctx context.Context, 
 	return args, nil
 }
 
-func (ec *executionContext) field_Query_task_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+func (ec *executionContext) field_Query_tasksByProject_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
 	var err error
 	args := map[string]interface{}{}
 	var arg0 string
@@ -4205,8 +4205,8 @@ func (ec *executionContext) fieldContext_Query_tasks(ctx context.Context, field 
 	return fc, nil
 }
 
-func (ec *executionContext) _Query_taskByProject(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
-	fc, err := ec.fieldContext_Query_taskByProject(ctx, field)
+func (ec *executionContext) _Query_tasksByProject(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Query_tasksByProject(ctx, field)
 	if err != nil {
 		return graphql.Null
 	}
@@ -4219,7 +4219,7 @@ func (ec *executionContext) _Query_taskByProject(ctx context.Context, field grap
 	}()
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Query().TaskByProject(rctx, fc.Args["id"].(string))
+		return ec.resolvers.Query().TasksByProject(rctx, fc.Args["id"].(string))
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -4236,7 +4236,7 @@ func (ec *executionContext) _Query_taskByProject(ctx context.Context, field grap
 	return ec.marshalNTask2ᚕᚖexampleᚋFindProMatesᚑApiᚋgraphᚋmodelᚐTaskᚄ(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) fieldContext_Query_taskByProject(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_Query_tasksByProject(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "Query",
 		Field:      field,
@@ -4273,7 +4273,7 @@ func (ec *executionContext) fieldContext_Query_taskByProject(ctx context.Context
 		}
 	}()
 	ctx = graphql.WithFieldContext(ctx, fc)
-	if fc.Args, err = ec.field_Query_taskByProject_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+	if fc.Args, err = ec.field_Query_tasksByProject_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
 		ec.Error(ctx, err)
 		return fc, err
 	}
@@ -8166,7 +8166,7 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 			}
 
 			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return rrm(innerCtx) })
-		case "taskByProject":
+		case "tasksByProject":
 			field := field
 
 			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
@@ -8175,7 +8175,7 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 						ec.Error(ctx, ec.Recover(ctx, r))
 					}
 				}()
-				res = ec._Query_taskByProject(ctx, field)
+				res = ec._Query_tasksByProject(ctx, field)
 				if res == graphql.Null {
 					atomic.AddUint32(&fs.Invalids, 1)
 				}

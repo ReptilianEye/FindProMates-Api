@@ -127,7 +127,7 @@ type Query {
   note(id: ID!): Note! # get note by id
   # tasks
   tasks: [Task!]! # get all tasks I was assigned to
-  taskByProject(id: ID!): [Task!]! # get all tasks by project id
+  tasksByProject(id: ID!): [Task!]! # get all tasks by project id
   task(id: ID!): Task! # get task by id
   # collab requests
   collabRequests: [CollabRequest!]! # get all my collab requests

@@ -63,7 +63,7 @@ func (m *UserModel) FindByParameters(params map[string]string) ([]User, error) {
 	query := bson.M{}
 	for key, value := range params {
 		if key == ID {
-			panic("Use FindById to find by id")
+			log.Panic("use FindById to find by id")
 		}
 		query[key] = value
 	}
@@ -85,18 +85,8 @@ func (m *UserModel) Create(user *User) (*User, error) {
 		return nil, err
 	}
 	user.Password = hashedPassword
-	if err := utils.ValidateEmail(user.Email); err != nil {
+	if err := validateUserInfo(user); err != nil {
 		return nil, err
-	}
-	if name, err := utils.ValidateName(user.FirstName); err != nil {
-		return nil, err
-	} else {
-		user.FirstName = *name
-	}
-	if name, err := utils.ValidateName(user.LastName); err != nil {
-		return nil, err
-	} else {
-		user.LastName = *name
 	}
 	result, err := m.C.InsertOne(ctx, user)
 	if err != nil {
@@ -106,7 +96,7 @@ func (m *UserModel) Create(user *User) (*User, error) {
 	return user, nil
 }
 
-func (m *UserModel) Update(user *User, changingPassword bool) (*User, error) {
+func (m *UserModel) Update(user *User, changingPassword bool) (*mongo.UpdateResult, error) {
 	if changingPassword {
 		hashedPassword, err := utils.HashPassword(user.Password)
 		if err != nil {
@@ -114,11 +104,11 @@ func (m *UserModel) Update(user *User, changingPassword bool) (*User, error) {
 		}
 		user.Password = hashedPassword
 	}
-	_, err := m.C.ReplaceOne(ctx, bson.M{ID: user.ID}, user)
-	if err != nil {
+	if err := validateUserInfo(user); err != nil {
 		return nil, err
 	}
-	return user, nil
+
+	return m.C.ReplaceOne(ctx, bson.M{ID: user.ID}, user)
 }
 
 func (m *UserModel) Authenticate(userInfo UserInfo, password string) bool {
@@ -144,4 +134,20 @@ func BuildUserInfo(username, email *string) UserInfo {
 		usersInfo[Email] = *email
 	}
 	return usersInfo
+}
+func validateUserInfo(user *User) error {
+	if err := utils.ValidateEmail(user.Email); err != nil {
+		return err
+	}
+	if name, err := utils.ValidateName(user.FirstName); err != nil {
+		return err
+	} else {
+		user.FirstName = name
+	}
+	if name, err := utils.ValidateName(user.LastName); err != nil {
+		return err
+	} else {
+		user.LastName = name
+	}
+	return nil
 }
