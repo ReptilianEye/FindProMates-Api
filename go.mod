@@ -3,7 +3,6 @@ module example/FindProMates-Api
 go 1.22
 
 require (
-	github.com/99designs/gqlgen v0.17.44-0.20240130005934-e174d59ed2da
 	github.com/go-chi/chi v1.5.5
 	github.com/joho/godotenv v1.5.1
 	github.com/vektah/gqlparser/v2 v2.5.11
@@ -29,8 +28,9 @@ require (
 )
 
 require (
-	github.com/dgrijalva/jwt-go v3.2.0+incompatible
+	github.com/99designs/gqlgen v0.17.43
 	github.com/go-chi/httprate v0.8.0
+	github.com/golang-jwt/jwt v3.2.2+incompatible
 	github.com/golang/snappy v0.0.4 // indirect
 	github.com/klauspost/compress v1.17.6 // indirect
 	github.com/montanaflynn/stats v0.7.1 // indirect
