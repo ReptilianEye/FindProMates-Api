@@ -13,7 +13,7 @@ type Project struct {
 	Owner            primitive.ObjectID          `bson:"owner,omitempty"`
 	Name             string                      `bson:"name,omitempty"`
 	Description      string                      `bson:"description,omitempty"`
-	Public           bool                        `bson:"public,omitempty"`
+	Public           bool                        `bson:"public"`
 	CompletionStatus util_types.CompletionStatus `bson:"completion_status,omitempty"`
 	Collaborators    []primitive.ObjectID        `bson:"collaborators,omitempty"`
 	SkillsNeeded     []util_types.Skill          `bson:"skills_needed,omitempty"`

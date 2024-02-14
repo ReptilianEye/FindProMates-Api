@@ -2,6 +2,8 @@ package projects
 
 import (
 	"context"
+	"fmt"
+	"reflect"
 
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -23,12 +25,44 @@ const (
 type ProjectModel struct {
 	C *mongo.Collection
 }
+type ProjectQuery struct {
+	key   string
+	value any
+}
+
+func NewProjectQuery(key string, value any) *ProjectQuery {
+	switch value.(type) {
+	case bool:
+		if key != Public {
+			panic(fmt.Sprintf("key %s cannot be of type bool", key))
+		}
+	case string:
+		if key != Name && key != Description && key != CompletionStatus {
+			panic(fmt.Sprintf("key %s cannot be of type string", key))
+		}
+	case primitive.ObjectID:
+		if key != ID && key != Owner {
+			panic(fmt.Sprintf("key %s cannot be of type primitive.ObjectID", key))
+		}
+	default:
+		panic(fmt.Sprintf("key %s cannot be of type %s", key, reflect.TypeOf(value)))
+	}
+
+	return &ProjectQuery{key, value}
+}
 
 var ctx = context.TODO()
 
-func (m *ProjectModel) All() ([]*Project, error) {
+func (m *ProjectModel) AllPublic() ([]*Project, error) {
+	return m.All(NewProjectQuery(Public, true))
+}
+func (m *ProjectModel) All(params ...*ProjectQuery) ([]*Project, error) {
 	projects := []*Project{}
-	cursor, err := m.C.Find(ctx, bson.M{})
+	query := bson.M{}
+	for _, param := range params {
+		query[param.key] = param.value
+	}
+	cursor, err := m.C.Find(ctx, query)
 	if err != nil {
 		return nil, err
 	}

@@ -8,11 +8,14 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"time"
 
 	"github.com/99designs/gqlgen/graphql/handler"
 	"github.com/99designs/gqlgen/graphql/playground"
 	"github.com/go-chi/chi"
 	"github.com/go-chi/chi/middleware"
+	"github.com/go-chi/httprate"
+	"github.com/rs/cors"
 )
 
 const defaultPort = "8080"
@@ -30,13 +33,13 @@ func main() {
 
 	router.Use(middleware.Logger)
 	router.Use(auth.Middleware)
-	// router.Use(middleware.Recoverer)
-	// router.Use(cors.New(cors.Options{
-	// 	AllowedOrigins:   []string{"http://localhost:8080"},
-	// 	AllowCredentials: true,
-	// 	Debug:            true,
-	// }).Handler)
-	// router.Use(httprate.LimitByIP(100, 1*time.Minute))
+	router.Use(middleware.Recoverer)
+	router.Use(cors.New(cors.Options{
+		AllowedOrigins:   []string{"http://localhost:8080"},
+		AllowCredentials: true,
+		Debug:            true,
+	}).Handler)
+	router.Use(httprate.LimitByIP(100, 1*time.Minute))
 
 	srv := handler.NewDefaultServer(graph.NewExecutableSchema(graph.Config{Resolvers: &graph.Resolver{}}))
 

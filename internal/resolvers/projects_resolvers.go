@@ -9,6 +9,7 @@ import (
 	"example/FindProMates-Api/internal/pkg/utils"
 	"log"
 	"slices"
+	"sort"
 
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
@@ -119,13 +120,42 @@ func UpdateProject(baseProject *projects.Project, updatedProject model.UpdatedPr
 	return nil
 }
 func PublicProjects() ([]*model.Project, error) {
-	projectsArr, err := app.App.Projects.All()
+	publicProjects, err := app.App.Projects.AllPublic()
 	if err != nil {
 		return nil, err
 	}
-	publicProjectsArr := utils.Filter(projectsArr, func(p *projects.Project) bool { return p.Public })
-	return utils.MapTo(publicProjectsArr, MapToQueryProject), nil
+	return utils.MapTo(publicProjects, MapToQueryProject), nil
 }
+func RecommendedProjects(user *users.User) ([]*model.Project, error) {
+	usersSkills, err := utils.ToSet(user.Skills, func(s util_types.Skill) (string, error) { return s.String(), nil })
+	if err != nil {
+		return nil, err
+	}
+	projects, err := app.App.Projects.AllPublic()
+	if err != nil {
+		return nil, err
+	}
+	buckets := map[int][]*model.Project{}
+	for _, project := range projects {
+		matchCount := 0
+		for _, skill := range project.SkillsNeeded {
+			if usersSkills.Contains(skill.String()) {
+				matchCount++
+			}
+		}
+		if matchCount > 0 {
+			buckets[matchCount] = append(buckets[matchCount], MapToQueryProject(project))
+		}
+	}
+	keys := utils.Keys(buckets)
+	sort.Slice(keys, func(i, j int) bool { return keys[i] > keys[j] })
+	result := []*model.Project{}
+	for _, key := range keys {
+		result = append(result, buckets[key]...)
+	}
+	return result, nil
+}
+
 func handleCollaborators(collabs []string, owner string, base ...primitive.ObjectID) ([]primitive.ObjectID, error) {
 	return utils.MergeSlices(base, collabs, utils.SafeIDToString, utils.SafeStringToID, owner)
 }

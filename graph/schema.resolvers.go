@@ -413,6 +413,15 @@ func (r *queryResolver) Projects(ctx context.Context) (*model.AllProjects, error
 	}, nil
 }
 
+// RecommendedProjects is the resolver for the recommendedProjects field.
+func (r *queryResolver) RecommendedProjects(ctx context.Context) ([]*model.Project, error) {
+	user, err := resolvers.UserFromContext(ctx)
+	if err != nil {
+		return nil, err
+	}
+	return resolvers.RecommendedProjects(user)
+}
+
 // Project is the resolver for the project field.
 func (r *queryResolver) Project(ctx context.Context, id string) (*model.Project, error) {
 	user, err := resolvers.UserFromContext(ctx)

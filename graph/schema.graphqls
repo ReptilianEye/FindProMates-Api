@@ -120,6 +120,7 @@ type Query {
   user(id: ID!): User # get user by id
   # projects
   projects: AllProjects! # get all projects
+  recommendedProjects: [Project!]! # get all public projects that match my skills
   project(id: ID!): Project! # get project by id
   userProjectsById(id: ID!): [Project!]! # ? get all projects by user id
   # notes
