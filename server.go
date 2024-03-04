@@ -35,7 +35,7 @@ func main() {
 	router.Use(auth.Middleware)
 	router.Use(middleware.Recoverer)
 	router.Use(cors.New(cors.Options{
-		AllowedOrigins:   []string{"http://localhost:8080"},
+		AllowedOrigins:   []string{"http://localhost:8080", "http://localhost:5173"}, //5173 is the port of the frontend
 		AllowCredentials: true,
 		Debug:            true,
 	}).Handler)

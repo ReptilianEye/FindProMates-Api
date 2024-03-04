@@ -29,7 +29,7 @@ require (
 
 require (
 	github.com/99designs/gqlgen v0.17.44
-	github.com/go-chi/httprate v0.8.0
+	github.com/go-chi/httprate v0.9.0
 	github.com/golang-jwt/jwt v3.2.2+incompatible
 	github.com/golang/snappy v0.0.4 // indirect
 	github.com/klauspost/compress v1.17.6 // indirect
